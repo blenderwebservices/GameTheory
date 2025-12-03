@@ -54,7 +54,91 @@
         </div>
     </nav>
 
-    <div class="max-w-7xl mx-auto p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto p-6 lg:p-8" x-data="{
+        matrix: {{ json_encode($gameScenario->payoff_matrix) }},
+        playerA: '{{ $gameScenario->player_a_name }}',
+        playerB: '{{ $gameScenario->player_b_name }}',
+        p: 0,
+        q: 0,
+        nashEquilibria: [],
+        init() {
+            this.calculateNash();
+            this.calculateMixed();
+            this.$watch('matrix', (val) => {
+                this.calculateNash();
+                this.calculateMixed();
+            }, { deep: true });
+        },
+        calculateMixed() {
+            // Payoffs for Player A
+            let A11 = Number(this.matrix['AA'][0]); // Top, Left
+            let A12 = Number(this.matrix['AB'][0]); // Top, Right
+            let A21 = Number(this.matrix['BA'][0]); // Bottom, Left
+            let A22 = Number(this.matrix['BB'][0]); // Bottom, Right
+
+            // Payoffs for Player B
+            let B11 = Number(this.matrix['AA'][1]); // Top, Left
+            let B12 = Number(this.matrix['AB'][1]); // Top, Right
+            let B21 = Number(this.matrix['BA'][1]); // Bottom, Left
+            let B22 = Number(this.matrix['BB'][1]); // Bottom, Right
+
+            // Calculate q (Probability B plays Left) to make A indifferent
+            // q*A11 + (1-q)*A12 = q*A21 + (1-q)*A22
+            // q(A11 - A12 - A21 + A22) = A22 - A12
+            let denomA = (A11 - A12 - A21 + A22);
+            this.q = denomA !== 0 ? (A22 - A12) / denomA : 0;
+
+            // Calculate p (Probability A plays Top) to make B indifferent
+            // p*B11 + (1-p)*B21 = p*B12 + (1-p)*B22
+            // p(B11 - B21 - B12 + B22) = B22 - B21
+            let denomB = (B11 - B21 - B12 + B22);
+            this.p = denomB !== 0 ? (B22 - B21) / denomB : 0;
+        },
+        formatProb(val) {
+            if (val < 0 || val > 1) return val.toFixed(2) + ' (Inválido)';
+            return (val * 100).toFixed(1) + '%';
+        },
+        calculateNash() {
+            let bestResponsesA = [];
+            let bestResponsesB = [];
+
+            // 1. Best responses for Player A (Rows) given each Column of B
+            // Column 1 (Left): Compare A11 (AA) vs A21 (BA)
+            let A11 = Number(this.matrix['AA'][0]);
+            let A21 = Number(this.matrix['BA'][0]);
+            if (A11 > A21) bestResponsesA.push('AA');
+            else if (A21 > A11) bestResponsesA.push('BA');
+            else { bestResponsesA.push('AA'); bestResponsesA.push('BA'); } // Indifferent
+
+            // Column 2 (Right): Compare A12 (AB) vs A22 (BB)
+            let A12 = Number(this.matrix['AB'][0]);
+            let A22 = Number(this.matrix['BB'][0]);
+            if (A12 > A22) bestResponsesA.push('AB');
+            else if (A22 > A12) bestResponsesA.push('BB');
+            else { bestResponsesA.push('AB'); bestResponsesA.push('BB'); } // Indifferent
+
+            // 2. Best responses for Player B (Columns) given each Row of A
+            // Row 1 (Top): Compare B11 (AA) vs B12 (AB)
+            let B11 = Number(this.matrix['AA'][1]);
+            let B12 = Number(this.matrix['AB'][1]);
+            if (B11 > B12) bestResponsesB.push('AA');
+            else if (B12 > B11) bestResponsesB.push('AB');
+            else { bestResponsesB.push('AA'); bestResponsesB.push('AB'); } // Indifferent
+
+            // Row 2 (Bottom): Compare B21 (BA) vs B22 (BB)
+            let B21 = Number(this.matrix['BA'][1]);
+            let B22 = Number(this.matrix['BB'][1]);
+            if (B21 > B22) bestResponsesB.push('BA');
+            else if (B22 > B21) bestResponsesB.push('BB');
+            else { bestResponsesB.push('BA'); bestResponsesB.push('BB'); } // Indifferent
+
+            // Intersection
+            this.nashEquilibria = bestResponsesA.filter(val => bestResponsesB.includes(val));
+        },
+        isNash(key) {
+            return this.nashEquilibria.includes(key);
+        }
+    }">
         <div class="mb-8">
             <a href="{{ route('home') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -66,33 +150,7 @@
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{{ $gameScenario->name }}</h1>
             <p class="text-gray-600 dark:text-gray-400 mb-8">{{ $gameScenario->description }}</p>
 
-            <div x-data="{
-                matrix: {{ json_encode($gameScenario->payoff_matrix) }},
-                playerA: '{{ $gameScenario->player_a_name }}',
-                playerB: '{{ $gameScenario->player_b_name }}',
-                isNash(r, c) {
-                    let rowChar = r === 0 ? 'A' : 'B';
-                    let colChar = c === 0 ? 'A' : 'B';
-                    let key = rowChar + colChar;
-                    
-                    if (!this.matrix[key]) return false;
-
-                    let payA = Number(this.matrix[key][0]);
-                    let payB = Number(this.matrix[key][1]);
-
-                    let otherRowChar = r === 0 ? 'B' : 'A';
-                    let otherKeyA = otherRowChar + colChar;
-                    let otherPayA = Number(this.matrix[otherKeyA][0]);
-                    let bestForA = payA >= otherPayA;
-
-                    let otherColChar = c === 0 ? 'B' : 'A';
-                    let otherKeyB = rowChar + otherColChar;
-                    let otherPayB = Number(this.matrix[otherKeyB][1]);
-                    let bestForB = payB >= otherPayB;
-
-                    return bestForA && bestForB;
-                }
-            }" class="space-y-6">
+            <div class="space-y-6">
 
                 <div class="p-6 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
                     <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">
@@ -103,76 +161,86 @@
                         <table class="w-full text-center border-collapse">
                             <thead>
                                 <tr>
-                                    <th class="p-4"></th>
-                                    <th class="p-4 border-b border-gray-200 dark:border-gray-700 font-semibold text-gray-600 dark:text-gray-400">
-                                        <span x-text="playerB"></span> ({{ __('Left') }})<br>
-                                        <span class="text-xs font-normal text-gray-500">{{ $gameScenario->player_b_strategy_1 }}</span>
+                                    <th class="p-4 border-b-2 border-gray-200 dark:border-gray-700 text-left align-bottom">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">{{ __('Rows') }}:</span>
+                                            <span class="font-bold text-blue-600 dark:text-blue-400" x-text="playerA"></span>
+                                        </div>
                                     </th>
-                                    <th class="p-4 border-b border-gray-200 dark:border-gray-700 font-semibold text-gray-600 dark:text-gray-400">
-                                        <span x-text="playerB"></span> ({{ __('Right') }})<br>
-                                        <span class="text-xs font-normal text-gray-500">{{ $gameScenario->player_b_strategy_2 }}</span>
+                                    <th colspan="2" class="p-4 border-b-2 border-gray-200 dark:border-gray-700">
+                                        <div class="flex flex-col items-center">
+                                            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">{{ __('Columns') }}:</span>
+                                            <span class="font-bold text-red-600 dark:text-red-400" x-text="playerB"></span>
+                                        </div>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th class="p-4 border-b-2 border-gray-200 dark:border-gray-700"></th>
+                                    <th class="p-4 border-b-2 border-gray-200 dark:border-gray-700 text-red-600 dark:text-red-400 font-bold text-lg">
+                                        {{ $gameScenario->player_b_strategy_1 }}
+                                    </th>
+                                    <th class="p-4 border-b-2 border-gray-200 dark:border-gray-700 text-red-600 dark:text-red-400 font-bold text-lg">
+                                        {{ $gameScenario->player_b_strategy_2 }}
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- Row 1: Top -->
                                 <tr>
-                                    <th class="p-4 border-r border-gray-200 dark:border-gray-700 font-semibold text-gray-600 dark:text-gray-400">
-                                        <span x-text="playerA"></span> ({{ __('Top') }})<br>
-                                        <span class="text-xs font-normal text-gray-500">{{ $gameScenario->player_a_strategy_1 }}</span>
+                                    <th class="p-4 border-r-2 border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400 font-bold text-lg vertical-text">
+                                        {{ $gameScenario->player_a_strategy_1 }}
                                     </th>
                                     <!-- Cell AA -->
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
-                                        :class="isNash(0, 0) ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
-                                        <div class="flex justify-center items-center gap-4 text-lg">
-                                            <span class="font-bold text-blue-600 dark:text-blue-400" x-text="matrix['AA'][0]"></span>
+                                        :class="isNash('AA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
+                                        <div class="flex justify-center items-center gap-2 text-lg">
+                                            <input type="number" x-model.number="matrix['AA'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
                                             <span class="text-gray-400">,</span>
-                                            <span class="font-bold text-red-600 dark:text-red-400" x-text="matrix['AA'][1]"></span>
+                                            <input type="number" x-model.number="matrix['AA'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
                                         </div>
-                                        <div x-show="isNash(0, 0)" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                                        <div x-show="isNash('AA')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
                                         </div>
                                     </td>
                                     <!-- Cell AB -->
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
-                                        :class="isNash(0, 1) ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
-                                        <div class="flex justify-center items-center gap-4 text-lg">
-                                            <span class="font-bold text-blue-600 dark:text-blue-400" x-text="matrix['AB'][0]"></span>
+                                        :class="isNash('AB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
+                                        <div class="flex justify-center items-center gap-2 text-lg">
+                                            <input type="number" x-model.number="matrix['AB'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
                                             <span class="text-gray-400">,</span>
-                                            <span class="font-bold text-red-600 dark:text-red-400" x-text="matrix['AB'][1]"></span>
+                                            <input type="number" x-model.number="matrix['AB'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
                                         </div>
-                                        <div x-show="isNash(0, 1)" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                                        <div x-show="isNash('AB')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
                                         </div>
                                     </td>
                                 </tr>
                                 <!-- Row 2: Bottom -->
                                 <tr>
-                                    <th class="p-4 border-r border-gray-200 dark:border-gray-700 font-semibold text-gray-600 dark:text-gray-400">
-                                        <span x-text="playerA"></span> ({{ __('Bottom') }})<br>
-                                        <span class="text-xs font-normal text-gray-500">{{ $gameScenario->player_a_strategy_2 }}</span>
+                                    <th class="p-4 border-r-2 border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400 font-bold text-lg vertical-text">
+                                        {{ $gameScenario->player_a_strategy_2 }}
                                     </th>
                                     <!-- Cell BA -->
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
-                                        :class="isNash(1, 0) ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
-                                        <div class="flex justify-center items-center gap-4 text-lg">
-                                            <span class="font-bold text-blue-600 dark:text-blue-400" x-text="matrix['BA'][0]"></span>
+                                        :class="isNash('BA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
+                                        <div class="flex justify-center items-center gap-2 text-lg">
+                                            <input type="number" x-model.number="matrix['BA'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
                                             <span class="text-gray-400">,</span>
-                                            <span class="font-bold text-red-600 dark:text-red-400" x-text="matrix['BA'][1]"></span>
+                                            <input type="number" x-model.number="matrix['BA'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
                                         </div>
-                                        <div x-show="isNash(1, 0)" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                                        <div x-show="isNash('BA')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
                                         </div>
                                     </td>
                                     <!-- Cell BB -->
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
-                                        :class="isNash(1, 1) ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
-                                        <div class="flex justify-center items-center gap-4 text-lg">
-                                            <span class="font-bold text-blue-600 dark:text-blue-400" x-text="matrix['BB'][0]"></span>
+                                        :class="isNash('BB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
+                                        <div class="flex justify-center items-center gap-2 text-lg">
+                                            <input type="number" x-model.number="matrix['BB'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
                                             <span class="text-gray-400">,</span>
-                                            <span class="font-bold text-red-600 dark:text-red-400" x-text="matrix['BB'][1]"></span>
+                                            <input type="number" x-model.number="matrix['BB'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
                                         </div>
-                                        <div x-show="isNash(1, 1)" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                                        <div x-show="isNash('BB')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
                                         </div>
                                     </td>
@@ -193,6 +261,176 @@
                 </div>
             </div>
         </div>
+
+        <!-- Probability Calculation Card -->
+        <div class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Probability Calculation (Mixed Strategies)') }}</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Theory & Origin -->
+                <div class="space-y-4">
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800">
+                        <h3 class="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">{{ __('Calculation Origin') }}</h3>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
+                            {{ __('When no pure Nash equilibrium exists, players randomize their strategies to make the opponent indifferent. We calculate p and q by equating expected utilities.') }}
+                        </p>
+                        
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded border border-yellow-200 dark:border-yellow-700 text-xs">
+                            <strong class="block text-gray-800 dark:text-gray-200 mb-1">{{ __('Result Validity:') }}</strong>
+                            <ul class="list-disc ml-4 space-y-1 text-gray-600 dark:text-gray-400">
+                                <li>
+                                    <span class="text-green-600 dark:text-green-400 font-semibold">{{ __('Valid (0 to 1):') }}</span> 
+                                    {{ __('If the result is between 0 and 1 (0% to 100%), a Mixed Strategy Nash Equilibrium exists.') }}
+                                </li>
+                                <li>
+                                    <span class="text-red-600 dark:text-red-400 font-semibold">{{ __('Invalid (< 0 or > 1):') }}</span> 
+                                    {{ __('If the result is negative or greater than 1, mathematically it is not a real probability. This indicates that no mixed equilibrium exists in this game (likely a pure dominant strategy exists).') }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 font-mono text-xs overflow-x-auto">
+                        <p class="mb-3 text-gray-500 dark:text-gray-400 font-sans font-bold">{{ __('Algebraic Formulas and Substitution:') }}</p>
+                        
+                        <!-- Formula q -->
+                        <div class="mb-4">
+                            <p class="text-blue-600 dark:text-blue-400 font-bold mb-1">{{ __('q (Probability B Left):') }}</p>
+                            <p class="mb-1 text-gray-500">
+                                q = (A22 - A12) / (A11 - A12 - A21 + A22)
+                            </p>
+                            <p class="text-gray-700 dark:text-gray-300">
+                                q = (<span x-text="matrix['BB'][0]"></span> - <span x-text="matrix['AB'][0]"></span>) / 
+                                (<span x-text="matrix['AA'][0]"></span> - <span x-text="matrix['AB'][0]"></span> - <span x-text="matrix['BA'][0]"></span> + <span x-text="matrix['BB'][0]"></span>)
+                            </p>
+                        </div>
+
+                        <!-- Formula p -->
+                        <div>
+                            <p class="text-red-600 dark:text-red-400 font-bold mb-1">{{ __('p (Probability A Top):') }}</p>
+                            <p class="mb-1 text-gray-500">
+                                p = (B22 - B21) / (B11 - B21 - B12 + B22)
+                            </p>
+                            <p class="text-gray-700 dark:text-gray-300">
+                                p = (<span x-text="matrix['BB'][1]"></span> - <span x-text="matrix['BA'][1]"></span>) / 
+                                (<span x-text="matrix['AA'][1]"></span> - <span x-text="matrix['BA'][1]"></span> - <span x-text="matrix['AB'][1]"></span> + <span x-text="matrix['BB'][1]"></span>)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="space-y-4">
+                    <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                        <h3 class="font-semibold text-indigo-800 dark:text-indigo-300 mb-4">{{ __('Calculated Results') }}</h3>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="bg-white dark:bg-gray-800 p-3 rounded shadow-sm text-center">
+                                <span class="block text-xs text-gray-500 uppercase">{{ __('Probability p (A)') }}</span>
+                                <span class="text-xl font-bold text-blue-600 dark:text-blue-400" x-text="formatProb(p)"></span>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-3 rounded shadow-sm text-center">
+                                <span class="block text-xs text-gray-500 uppercase">{{ __('Probability q (B)') }}</span>
+                                <span class="text-xl font-bold text-red-600 dark:text-red-400" x-text="formatProb(q)"></span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-indigo-200 dark:border-indigo-700 pt-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ __('Probability of each Cell') }}</h4>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
+                                    <span>Top-Left (p*q):</span>
+                                    <span class="font-bold" x-text="formatProb(p * q)"></span>
+                                </div>
+                                <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
+                                    <span>Top-Right (p*(1-q)):</span>
+                                    <span class="font-bold" x-text="formatProb(p * (1-q))"></span>
+                                </div>
+                                <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
+                                    <span>Bottom-Left ((1-p)*q):</span>
+                                    <span class="font-bold" x-text="formatProb((1-p) * q)"></span>
+                                </div>
+                                <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
+                                    <span>Bottom-Right ((1-p)*(1-q)):</span>
+                                    <span class="font-bold" x-text="formatProb((1-p) * (1-q))"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interpretation Card -->
+        <div class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Payoff Matrix Interpretation') }}</h2>
+            
+            <div class="space-y-6 text-gray-700 dark:text-gray-300">
+                <!-- Point 1 -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                    <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center">
+                        <span class="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">1</span>
+                        {{ __('Positive and Negative Values Selection') }}
+                    </h3>
+                    <div class="ml-8 text-sm leading-relaxed space-y-2">
+                        <p>{{ __('Values in the matrix represent the utility or benefit each player receives. A scale of -10 to 10 has been selected to represent preference intensity:') }}</p>
+                        <ul class="list-disc ml-5 space-y-1">
+                            <li>
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ __('Range -10 to 10:') }}</span> 
+                                {{ __('Allows modeling a full spectrum of results, from catastrophic situations (-10) to ideal outcomes (10).') }}
+                            </li>
+                            <li>
+                                <span class="font-semibold text-green-600 dark:text-green-400">{{ __('Values 1 to 10 (Positive):') }}</span> 
+                                {{ __('Represent gains, benefits, or satisfaction. The higher the number, the greater the reward.') }}
+                            </li>
+                            <li>
+                                <span class="font-semibold text-gray-600 dark:text-gray-400">{{ __('Value 0:') }}</span> 
+                                {{ __('Represents a neutral outcome, where there is neither significant gain nor loss (indifference point).') }}
+                            </li>
+                            <li>
+                                <span class="font-semibold text-red-600 dark:text-red-400">{{ __('Values -10 to -1 (Negative):') }}</span> 
+                                {{ __('Represent costs, losses, punishments, or undesirable consequences. The lower the number (more negative), the worse the outcome.') }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Point 2 -->
+                <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
+                    <h3 class="font-semibold text-green-800 dark:text-green-300 mb-2 flex items-center">
+                        <span class="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                        {{ __('Nash Equilibrium (Green Cells)') }}
+                    </h3>
+                    <p class="ml-8 text-sm leading-relaxed">
+                        {{ __('Cells highlighted in green indicate a Nash Equilibrium. This means that, at that point, neither player has incentives to unilaterally change their strategy. If a player changes their decision while the other maintains theirs, their payoff would decrease or not improve. It is the "stable" state of the game where both strategies coincide optimally.') }}
+                    </p>
+                </div>
+
+                <!-- Point 3 -->
+                <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                    <h3 class="font-semibold text-purple-800 dark:text-purple-300 mb-2 flex items-center">
+                        <span class="bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">3</span>
+                        {{ __('Maximization, Optimization, and Rationality') }}
+                    </h3>
+                    <div class="ml-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
+                            <strong class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Rationality') }}</strong>
+                            {{ __('It is assumed that players are rational: they think logically, understand the rules, and always act to satisfy their own interests.') }}
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
+                            <strong class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Maximization') }}</strong>
+                            {{ __('The fundamental goal is to maximize their own utility. Each player seeks to obtain the highest possible value in the matrix for themselves.') }}
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
+                            <strong class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Optimization') }}</strong>
+                            {{ __('It is the process of choosing the "best response" to the opponent\'s actions. It is not just seeking the highest number, but the best possible result given the circumstances.') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </div>
 </body>
 </html>
