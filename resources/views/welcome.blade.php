@@ -116,7 +116,7 @@
         </div>
         
         <div class="mt-12 text-center text-gray-500 text-sm">
-            &copy; {{ date('Y') }} Game Theory App. Built with Laravel & Filament.
+            &copy; {{ date('Y') }} Game Theory App. Built by Oscar Caloca y Frank Gomez.
         </div>
     </div>
 </body>
