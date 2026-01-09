@@ -18,4 +18,14 @@ class CreateGameScenario extends CreateRecord
             Actions\LocaleSwitcher::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data['user_id'] = auth()->id();
+        
+        // Also ensure default strategies/payoffs if needed? 
+        // Logic seems handled by default values in Form or defaults in DB.
+        
+        return $data;
+    }
 }

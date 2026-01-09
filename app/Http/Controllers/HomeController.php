@@ -8,7 +8,6 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $scenarios = \App\Models\GameScenario::all();
-        return view('welcome', compact('scenarios'));
+        return view('home');
     }
 }

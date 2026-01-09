@@ -1,65 +1,18 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('View Simulation') }} - {{ $gameScenario->name }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
-    <style>
-        body {
-            font-family: 'Figtree', sans-serif;
-        }
-    </style>
-</head>
-<body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
+<x-layouts.app>
+    <x-slot name="title">{{ __('View Simulation') }} - {{ $gameScenario->name }}</x-slot>
 
-    <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <a href="{{ route('home') }}" class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                            Game Theory
-                        </a>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white focus:outline-none transition duration-150 ease-in-out">
-                            <span>{{ __('Language') }} ({{ strtoupper(app()->getLocale()) }})</span>
-                            <svg class="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open" @click.away="open = false" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5">
-                            <div class="py-1">
-                                <a href="/lang/en" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">{{ __('English') }}</a>
-                                <a href="/lang/es" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">{{ __('Spanish') }}</a>
-                            </div>
-                        </div>
-                    </div>
-                    @if (Route::has('filament.admin.auth.login'))
-                        @auth
-                            <a href="{{ url('/admin') }}" class="text-sm text-gray-700 dark:text-gray-300 underline">{{ __('Dashboard') }}</a>
-                        @else
-                            <a href="{{ route('filament.admin.auth.login') }}" class="text-sm text-gray-700 dark:text-gray-300 underline">{{ __('Login') }}</a>
-                        @endauth
-                    @endif
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto p-6 lg:p-8" x-data="{
+    <div x-data="{
         matrix: {{ json_encode($gameScenario->payoff_matrix) }},
         playerA: '{{ $gameScenario->player_a_name }}',
         playerB: '{{ $gameScenario->player_b_name }}',
         p: 0,
         q: 0,
+        playerAStrategy1: '{{ $gameScenario->player_a_strategy_1 }}',
+        playerAStrategy2: '{{ $gameScenario->player_a_strategy_2 }}',
+        playerBStrategy1: '{{ $gameScenario->player_b_strategy_1 }}',
+        playerBStrategy2: '{{ $gameScenario->player_b_strategy_2 }}',
+        bestResponsesA: [],
+        bestResponsesB: [],
         nashEquilibria: [],
         init() {
             this.calculateNash();
@@ -69,7 +22,79 @@
                 this.calculateMixed();
             }, { deep: true });
         },
+        swapStrategies() {
+            // Swap text for A
+            let tempA = this.playerAStrategy1;
+            this.playerAStrategy1 = this.playerAStrategy2;
+            this.playerAStrategy2 = tempA;
+
+            // Swap text for B
+            let tempB = this.playerBStrategy1;
+            this.playerBStrategy1 = this.playerBStrategy2;
+            this.playerBStrategy2 = tempB;
+
+            // Swap Matrix Logic
+            // Swap Rows (A1 <-> A2)
+            let tempRow1 = {...this.matrix['AA']};
+            let tempRow2 = {...this.matrix['AB']};
+            
+            this.matrix['AA'] = this.matrix['BA'];
+            this.matrix['AB'] = this.matrix['BB'];
+            this.matrix['BA'] = tempRow1;
+            this.matrix['BB'] = tempRow2;
+
+            // Swap Columns (B1 <-> B2)
+            // Now that rows are swapped, we swap columns within each row
+            // Col 1 is now (BA, BB original positions), Col 2 is (AA, AB original positions) if just rows swapped
+            // But we operate on keys: AA->AB, BA->BB
+            
+            // New AA (was BA) <-> New AB (was BB)
+            let tempAA = {...this.matrix['AA']};
+            this.matrix['AA'] = this.matrix['AB'];
+            this.matrix['AB'] = tempAA;
+
+            // New BA (was AA) <-> New BB (was AB)
+            let tempBA = {...this.matrix['BA']};
+            this.matrix['BA'] = this.matrix['BB'];
+            this.matrix['BB'] = tempBA;
+        },
+        swapPlayers() {
+            // Swap Names
+            let tempName = this.playerA;
+            this.playerA = this.playerB;
+            this.playerB = tempName;
+
+            // Swap Strategies (Set A <-> Set B)
+            let tempS1 = this.playerAStrategy1;
+            let tempS2 = this.playerAStrategy2;
+            this.playerAStrategy1 = this.playerBStrategy1;
+            this.playerAStrategy2 = this.playerBStrategy2;
+            this.playerBStrategy1 = tempS1;
+            this.playerBStrategy2 = tempS2;
+
+            // Transpose Matrix and Swap Payoffs [0]<->[1]
+            // Original:
+            // AA(0,1) AB(0,1)
+            // BA(0,1) BB(0,1)
+            
+            // New (Transposed):
+            // AA = Old AA (swapped payoffs)
+            // AB = Old BA (swapped payoffs)
+            // BA = Old AB (swapped payoffs)
+            // BB = Old BB (swapped payoffs)
+
+            let oldAA = [...this.matrix['AA']];
+            let oldAB = [...this.matrix['AB']];
+            let oldBA = [...this.matrix['BA']];
+            let oldBB = [...this.matrix['BB']];
+
+            this.matrix['AA'] = [oldAA[1], oldAA[0]];
+            this.matrix['AB'] = [oldBA[1], oldBA[0]];
+            this.matrix['BA'] = [oldAB[1], oldAB[0]];
+            this.matrix['BB'] = [oldBB[1], oldBB[0]];
+        },
         calculateMixed() {
+            // ... (existing logic)
             // Payoffs for Player A
             let A11 = Number(this.matrix['AA'][0]); // Top, Left
             let A12 = Number(this.matrix['AB'][0]); // Top, Right
@@ -99,50 +124,113 @@
             return (val * 100).toFixed(1) + '%';
         },
         calculateNash() {
-            let bestResponsesA = [];
-            let bestResponsesB = [];
+            this.bestResponsesA = [];
+            this.bestResponsesB = [];
 
             // 1. Best responses for Player A (Rows) given each Column of B
             // Column 1 (Left): Compare A11 (AA) vs A21 (BA)
             let A11 = Number(this.matrix['AA'][0]);
             let A21 = Number(this.matrix['BA'][0]);
-            if (A11 > A21) bestResponsesA.push('AA');
-            else if (A21 > A11) bestResponsesA.push('BA');
-            else { bestResponsesA.push('AA'); bestResponsesA.push('BA'); } // Indifferent
+            if (A11 > A21) this.bestResponsesA.push('AA');
+            else if (A21 > A11) this.bestResponsesA.push('BA');
+            else { this.bestResponsesA.push('AA'); this.bestResponsesA.push('BA'); } // Indifferent
 
             // Column 2 (Right): Compare A12 (AB) vs A22 (BB)
             let A12 = Number(this.matrix['AB'][0]);
             let A22 = Number(this.matrix['BB'][0]);
-            if (A12 > A22) bestResponsesA.push('AB');
-            else if (A22 > A12) bestResponsesA.push('BB');
-            else { bestResponsesA.push('AB'); bestResponsesA.push('BB'); } // Indifferent
+            if (A12 > A22) this.bestResponsesA.push('AB');
+            else if (A22 > A12) this.bestResponsesA.push('BB');
+            else { this.bestResponsesA.push('AB'); this.bestResponsesA.push('BB'); } // Indifferent
 
             // 2. Best responses for Player B (Columns) given each Row of A
             // Row 1 (Top): Compare B11 (AA) vs B12 (AB)
             let B11 = Number(this.matrix['AA'][1]);
             let B12 = Number(this.matrix['AB'][1]);
-            if (B11 > B12) bestResponsesB.push('AA');
-            else if (B12 > B11) bestResponsesB.push('AB');
-            else { bestResponsesB.push('AA'); bestResponsesB.push('AB'); } // Indifferent
+            if (B11 > B12) this.bestResponsesB.push('AA');
+            else if (B12 > B11) this.bestResponsesB.push('AB');
+            else { this.bestResponsesB.push('AA'); this.bestResponsesB.push('AB'); } // Indifferent
 
             // Row 2 (Bottom): Compare B21 (BA) vs B22 (BB)
             let B21 = Number(this.matrix['BA'][1]);
             let B22 = Number(this.matrix['BB'][1]);
-            if (B21 > B22) bestResponsesB.push('BA');
-            else if (B22 > B21) bestResponsesB.push('BB');
-            else { bestResponsesB.push('BA'); bestResponsesB.push('BB'); } // Indifferent
+            if (B21 > B22) this.bestResponsesB.push('BA');
+            else if (B22 > B21) this.bestResponsesB.push('BB');
+            else { this.bestResponsesB.push('BA'); this.bestResponsesB.push('BB'); } // Indifferent
 
             // Intersection
-            this.nashEquilibria = bestResponsesA.filter(val => bestResponsesB.includes(val));
+            this.nashEquilibria = this.bestResponsesA.filter(val => this.bestResponsesB.includes(val));
+        },
+        async saveMatrix() {
+            try {
+                let payload = {
+                    payoff_matrix: this.matrix,
+                    player_a_name: this.playerA,
+                    player_b_name: this.playerB,
+                    player_a_strategy_1: this.playerAStrategy1,
+                    player_a_strategy_2: this.playerAStrategy2,
+                    player_b_strategy_1: this.playerBStrategy1,
+                    player_b_strategy_2: this.playerBStrategy2
+                };
+                
+                let response = await fetch('{{ route('simulation.update', $gameScenario) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    alert('{{ __('Changes saved successfully') }}');
+                } else {
+                    alert('{{ __('Error saving changes') }}');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('{{ __('An error occurred') }}');
+            }
+        },
+        async resetMatrix() {
+            if (!confirm('{{ __('Are you sure you want to reset the simulation to default values?') }}')) return;
+
+            try {
+                let response = await fetch('{{ route('simulation.reset', $gameScenario) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                if (response.ok) {
+                    let data = await response.json();
+                    this.matrix = data.payoff_matrix;
+                    this.playerA = data.player_a_name;
+                    this.playerB = data.player_b_name;
+                    this.playerAStrategy1 = data.player_a_strategy_1;
+                    this.playerAStrategy2 = data.player_a_strategy_2;
+                    this.playerBStrategy1 = data.player_b_strategy_1;
+                    this.playerBStrategy2 = data.player_b_strategy_2;
+                    
+                    alert('{{ __('Simulation reset to defaults') }}');
+                } else {
+                    alert('{{ __('Error resetting simulation') }}');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('{{ __('An error occurred') }}');
+            }
         },
         isNash(key) {
             return this.nashEquilibria.includes(key);
         }
     }">
         <div class="mb-8">
-            <a href="{{ route('home') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
+            <a href="{{ route('simulation.index') }}" class="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                {{ __('Home') }}
+                {{ __('Back to Simulations') }}
             </a>
         </div>
 
@@ -177,10 +265,10 @@
                                 <tr>
                                     <th class="p-4 border-b-2 border-gray-200 dark:border-gray-700"></th>
                                     <th class="p-4 border-b-2 border-gray-200 dark:border-gray-700 text-red-600 dark:text-red-400 font-bold text-lg">
-                                        {{ $gameScenario->player_b_strategy_1 }}
+                                        <span x-text="playerBStrategy1"></span>
                                     </th>
                                     <th class="p-4 border-b-2 border-gray-200 dark:border-gray-700 text-red-600 dark:text-red-400 font-bold text-lg">
-                                        {{ $gameScenario->player_b_strategy_2 }}
+                                        <span x-text="playerBStrategy2"></span>
                                     </th>
                                 </tr>
                             </thead>
@@ -188,15 +276,19 @@
                                 <!-- Row 1: Top -->
                                 <tr>
                                     <th class="p-4 border-r-2 border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400 font-bold text-lg vertical-text">
-                                        {{ $gameScenario->player_a_strategy_1 }}
+                                        <span x-text="playerAStrategy1"></span>
                                     </th>
                                     <!-- Cell AA -->
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('AA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="number" x-model.number="matrix['AA'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['AA'][0]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesA.includes('AA') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="number" x-model.number="matrix['AA'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['AA'][1]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesB.includes('AA') }">
                                         </div>
                                         <div x-show="isNash('AA')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
@@ -206,9 +298,13 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('AB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="number" x-model.number="matrix['AB'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['AB'][0]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesA.includes('AB') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="number" x-model.number="matrix['AB'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['AB'][1]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesB.includes('AB') }">
                                         </div>
                                         <div x-show="isNash('AB')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
@@ -218,15 +314,19 @@
                                 <!-- Row 2: Bottom -->
                                 <tr>
                                     <th class="p-4 border-r-2 border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400 font-bold text-lg vertical-text">
-                                        {{ $gameScenario->player_a_strategy_2 }}
+                                        <span x-text="playerAStrategy2"></span>
                                     </th>
                                     <!-- Cell BA -->
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('BA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="number" x-model.number="matrix['BA'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['BA'][0]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesA.includes('BA') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="number" x-model.number="matrix['BA'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['BA'][1]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesB.includes('BA') }">
                                         </div>
                                         <div x-show="isNash('BA')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
@@ -236,9 +336,13 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('BB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="number" x-model.number="matrix['BB'][0]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['BB'][0]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesA.includes('BB') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="number" x-model.number="matrix['BB'][1]" min="-10" max="10" step="1" class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none">
+                                            <input type="number" x-model.number="matrix['BB'][1]" min="-10" max="10" step="1" 
+                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                                :class="{ 'underline': bestResponsesB.includes('BB') }">
                                         </div>
                                         <div x-show="isNash('BB')" class="mt-2 text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">
                                             {{ __('Nash Equilibrium') }}
@@ -257,6 +361,27 @@
                         <p class="mt-1">
                             {{ __('Cells highlighted in') }} <span class="text-green-600 font-bold">{{ __('Green') }}</span> {{ __('represent a Pure Nash Equilibrium') }}.
                         </p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-600 mt-6">
+                    <div class="flex gap-4">
+                        <button @click="swapStrategies()" class="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors text-sm font-semibold">
+                            {{ __('Switch Strategies Order') }}
+                        </button>
+                        <button @click="swapPlayers()" class="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors text-sm font-semibold">
+                            {{ __('Switch Players') }}
+                        </button>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button @click="resetMatrix()" class="px-6 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-semibold">
+                            {{ __('Reset Default') }}
+                        </button>
+                        <button @click="saveMatrix()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-colors font-semibold">
+                            {{ __('Save Changes') }}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -284,7 +409,7 @@
                                 </li>
                                 <li>
                                     <span class="text-red-600 dark:text-red-400 font-semibold">{{ __('Invalid (< 0 or > 1):') }}</span> 
-                                    {{ __('If the result is negative or greater than 1, mathematically it is not a real probability. This indicates that no mixed equilibrium exists in this game (likely a pure dominant strategy exists).') }}
+                                    {{ __('If the result is negative or greater than 1, mathematically it is not a real probability. This indicates that no mixed equilibrium exists in this game (likely a pure dominant strategy exists.') }}
                                 </li>
                             </ul>
                         </div>
@@ -432,5 +557,4 @@
 
 
     </div>
-</body>
-</html>
+</x-layouts.app>

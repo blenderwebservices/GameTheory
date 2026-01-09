@@ -19,6 +19,17 @@ class GameScenarioResource extends Resource
 {
     use Translatable;
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->role !== 'admin') {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query;
+    }
+
     protected static ?string $model = GameScenario::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

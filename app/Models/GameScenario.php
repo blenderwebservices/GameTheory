@@ -24,6 +24,7 @@ class GameScenario extends Model
     protected $fillable = [
         'name',
         'description',
+        'user_id',
         'player_a_name',
         'player_a_strategy_1',
         'player_a_strategy_2',
@@ -31,10 +32,19 @@ class GameScenario extends Model
         'player_b_strategy_1',
         'player_b_strategy_2',
         'payoff_matrix',
+        'default_payoff_matrix',
+        'default_configuration',
     ];
 
     protected $casts = [
         'payoff_matrix' => 'array',
+        'default_payoff_matrix' => 'array',
+        'default_configuration' => 'array',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
     //
 }

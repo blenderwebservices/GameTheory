@@ -57,6 +57,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->navigationItems([
+                \Filament\Navigation\NavigationItem::make('Simulations')
+                    ->url('/simulations', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-play')
+                    ->sort(1),
             ]);
     }
 }

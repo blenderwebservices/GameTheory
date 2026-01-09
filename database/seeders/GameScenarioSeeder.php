@@ -12,8 +12,22 @@ class GameScenarioSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create Admin User
+        $admin = \App\Models\User::firstOrCreate(
+            ['email' => 'admin@admin.com'],
+            [
+                'name' => 'Admin',
+                'password' => 'password1.', // Using plain text as requested in prompt, usually should be hashed but Laravel mutator/cast handles it or Hash::make()
+            ]
+        );
+        
+        // Ensure prompt requested specific password 'password1.'
+        // Note: 'password' => 'password1.' might be hashed if 'password' => 'hashed' cast is on User model BUT firstOrCreate second arg is attributes.
+        // The User model has 'password' => 'hashed' cast. So simple assignment works in Laravel 10+.
+        
         // 1. Prisoner's Dilemma
         \App\Models\GameScenario::create([
+            'user_id' => $admin->id,
             'name' => [
                 'en' => 'Prisoner\'s Dilemma',
                 'es' => 'Dilema del Prisionero',
@@ -52,10 +66,25 @@ class GameScenarioSeeder extends Seeder
                 'BA' => [-10, 0], // Silent / Confess
                 'BB' => [-1, -1], // Silent / Silent
             ],
+            'default_payoff_matrix' => [
+                'AA' => [-5, -5],
+                'AB' => [0, -10],
+                'BA' => [-10, 0],
+                'BB' => [-1, -1],
+            ],
+            'default_configuration' => [
+                'player_a_name' => 'Prisoner A',
+                'player_b_name' => 'Prisoner B',
+                'player_a_strategy_1' => 'Silent',
+                'player_a_strategy_2' => 'Confess',
+                'player_b_strategy_1' => 'Silent',
+                'player_b_strategy_2' => 'Confess',
+            ],
         ]);
 
         // 2. Battle of the Sexes
         \App\Models\GameScenario::create([
+            'user_id' => $admin->id,
             'name' => [
                 'en' => 'Battle of the Sexes',
                 'es' => 'La Guerra de los Sexos',
@@ -94,10 +123,25 @@ class GameScenarioSeeder extends Seeder
                 'BA' => [0, 0], // Football / Opera
                 'BB' => [2, 3], // Football / Football
             ],
+            'default_payoff_matrix' => [
+                'AA' => [3, 2],
+                'AB' => [0, 0],
+                'BA' => [0, 0],
+                'BB' => [2, 3],
+            ],
+            'default_configuration' => [
+                'player_a_name' => 'Husband',
+                'player_b_name' => 'Wife',
+                'player_a_strategy_1' => 'Football',
+                'player_a_strategy_2' => 'Opera',
+                'player_b_strategy_1' => 'Football',
+                'player_b_strategy_2' => 'Opera',
+            ],
         ]);
 
         // 3. Game of Chicken
         \App\Models\GameScenario::create([
+            'user_id' => $admin->id,
             'name' => [
                 'en' => 'Game of Chicken',
                 'es' => 'Juego de la Gallina',
@@ -136,10 +180,25 @@ class GameScenarioSeeder extends Seeder
                 'BA' => [1, -1],  // Straight / Swerve
                 'BB' => [-10, -10], // Straight / Straight
             ],
+            'default_payoff_matrix' => [
+                'AA' => [0, 0],
+                'AB' => [-1, 1],
+                'BA' => [1, -1],
+                'BB' => [-10, -10],
+            ],
+            'default_configuration' => [
+                'player_a_name' => 'Driver A',
+                'player_b_name' => 'Driver B',
+                'player_a_strategy_1' => 'Swerve',
+                'player_a_strategy_2' => 'Straight',
+                'player_b_strategy_1' => 'Swerve',
+                'player_b_strategy_2' => 'Straight',
+            ],
         ]);
 
         // 4. Stag Hunt
         \App\Models\GameScenario::create([
+            'user_id' => $admin->id,
             'name' => [
                 'en' => 'Stag Hunt',
                 'es' => 'Caza del Ciervo',
@@ -177,6 +236,20 @@ class GameScenarioSeeder extends Seeder
                 'AB' => [0, 3], // Stag / Hare
                 'BA' => [3, 0], // Hare / Stag
                 'BB' => [1, 1], // Hare / Hare
+            ],
+            'default_payoff_matrix' => [
+                'AA' => [5, 5],
+                'AB' => [0, 3],
+                'BA' => [3, 0],
+                'BB' => [1, 1],
+            ],
+            'default_configuration' => [
+                'player_a_name' => 'Hunter A',
+                'player_b_name' => 'Hunter B',
+                'player_a_strategy_1' => 'Stag',
+                'player_a_strategy_2' => 'Hare',
+                'player_b_strategy_1' => 'Stag',
+                'player_b_strategy_2' => 'Hare',
             ],
         ]);
     }
