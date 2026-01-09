@@ -38,6 +38,61 @@ class GameScenarioResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('template')
+                    ->label('Choose a Template')
+                    ->options(function () {
+                        $templates = GameScenario::getTemplates();
+                        return collect($templates)->mapWithKeys(function ($item, $key) {
+                            // Use English name for the label, or fallback
+                            return [$key => $item['name']['en'] ?? $key];
+                        });
+                    })
+                    ->live()
+                    ->dehydrated(true)
+                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state, $livewire) {
+                        if (!$state) {
+                            return;
+                        }
+
+                        $templates = GameScenario::getTemplates();
+                        $template = $templates[$state] ?? null;
+
+                        if (!$template) {
+                            return;
+                        }
+
+                        // Determine locale
+                        $locale = property_exists($livewire, 'activeLocale') ? $livewire->activeLocale : app()->getLocale();
+
+                        // Helper to get translated value or fallback
+                        $getTranslated = function ($value) use ($locale) {
+                            if (is_array($value)) {
+                                return $value[$locale] ?? $value['en'] ?? reset($value);
+                            }
+                            return $value;
+                        };
+
+                        $set('name', $getTranslated($template['name']));
+                        $set('description', $getTranslated($template['description']));
+
+                        // Player A
+                        $set('player_a_name', $getTranslated($template['player_a_name']));
+                        $set('player_a_strategy_1', $getTranslated($template['player_a_strategy_1']));
+                        $set('player_a_strategy_2', $getTranslated($template['player_a_strategy_2']));
+
+                        // Player B
+                        $set('player_b_name', $getTranslated($template['player_b_name']));
+                        $set('player_b_strategy_1', $getTranslated($template['player_b_strategy_1']));
+                        $set('player_b_strategy_2', $getTranslated($template['player_b_strategy_2']));
+
+                        // Payoff Matrix
+                        if (isset($template['payoff_matrix'])) {
+                            foreach ($template['payoff_matrix'] as $key => $values) {
+                                $set("payoff_matrix.{$key}.0", $values[0]);
+                                $set("payoff_matrix.{$key}.1", $values[1]);
+                            }
+                        }
+                    }),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),

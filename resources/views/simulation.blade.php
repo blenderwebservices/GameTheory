@@ -57,6 +57,10 @@
             let tempBA = {...this.matrix['BA']};
             this.matrix['BA'] = this.matrix['BB'];
             this.matrix['BB'] = tempBA;
+            
+            window.dispatchEvent(new CustomEvent('notify', { 
+                detail: { message: '{{ __('Strategies order switched') }}', type: 'info' } 
+            }));
         },
         swapPlayers() {
             // Swap Names
@@ -92,6 +96,10 @@
             this.matrix['AB'] = [oldBA[1], oldBA[0]];
             this.matrix['BA'] = [oldAB[1], oldAB[0]];
             this.matrix['BB'] = [oldBB[1], oldBB[0]];
+            
+            window.dispatchEvent(new CustomEvent('notify', { 
+                detail: { message: '{{ __('Players switched') }}', type: 'info' } 
+            }));
         },
         calculateMixed() {
             // ... (existing logic)
@@ -182,13 +190,19 @@
                 });
                 
                 if (response.ok) {
-                    alert('{{ __('Changes saved successfully') }}');
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: '{{ __('Changes saved successfully') }}', type: 'success' } 
+                    }));
                 } else {
-                    alert('{{ __('Error saving changes') }}');
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: '{{ __('Error saving changes') }}', type: 'error' } 
+                    }));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('{{ __('An error occurred') }}');
+                window.dispatchEvent(new CustomEvent('notify', { 
+                    detail: { message: '{{ __('An error occurred') }}', type: 'error' } 
+                }));
             }
         },
         async resetMatrix() {
@@ -214,13 +228,19 @@
                     this.playerBStrategy1 = data.player_b_strategy_1;
                     this.playerBStrategy2 = data.player_b_strategy_2;
                     
-                    alert('{{ __('Simulation reset to defaults') }}');
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: '{{ __('Simulation reset to defaults') }}', type: 'success' } 
+                    }));
                 } else {
-                    alert('{{ __('Error resetting simulation') }}');
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: '{{ __('Error resetting simulation') }}', type: 'error' } 
+                    }));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('{{ __('An error occurred') }}');
+                window.dispatchEvent(new CustomEvent('notify', { 
+                    detail: { message: '{{ __('An error occurred') }}', type: 'error' } 
+                }));
             }
         },
         isNash(key) {
