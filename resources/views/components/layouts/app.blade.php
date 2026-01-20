@@ -26,7 +26,7 @@
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
                         <a href="{{ route('home') }}" class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                            Game Theory
+                            {{ __('Game Theory') }}
                         </a>
                     </div>
                     <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
@@ -110,7 +110,7 @@
         {{ $slot }}
 
         <div class="mt-12 text-center text-gray-500 text-sm">
-            &copy; {{ date('Y') }} Game Theory App. Built by Oscar Caloca y Frank Gomez.
+            &copy; {{ date('Y') }} Game Theory App. {{ __('Built by') }} Oscar Caloca y Frank Gomez.
         </div>
     </div>
     <div x-data="{ 
