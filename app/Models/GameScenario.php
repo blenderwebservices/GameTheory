@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Translatable\HasTranslations;
+use Parallax\FilamentComments\Models\Traits\HasFilamentComments;
 
 class GameScenario extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory, HasTranslations, HasFilamentComments;
 
     public $translatable = [
         'name',

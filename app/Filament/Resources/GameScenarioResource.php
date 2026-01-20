@@ -227,6 +227,7 @@ class GameScenarioResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -249,6 +250,7 @@ class GameScenarioResource extends Resource
         return [
             'index' => Pages\ListGameScenarios::route('/'),
             'create' => Pages\CreateGameScenario::route('/create'),
+            'view' => Pages\ViewGameScenario::route('/{record}'),
             'edit' => Pages\EditGameScenario::route('/{record}/edit'),
             'simulation' => Pages\Simulation::route('/{record}/simulation'),
         ];

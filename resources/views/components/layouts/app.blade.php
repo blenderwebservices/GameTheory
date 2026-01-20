@@ -14,6 +14,7 @@
             font-family: 'Figtree', sans-serif;
         }
     </style>
+    @filamentStyles
 </head>
 
 <body class="antialiased bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
@@ -162,6 +163,7 @@
             </div>
         </template>
     </div>
+    @filamentScripts
 </body>
 
 </html>

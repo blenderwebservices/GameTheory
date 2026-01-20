@@ -16,11 +16,12 @@ class EditGameScenario extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            \Parallax\FilamentComments\Actions\CommentsAction::make(),
             Actions\LocaleSwitcher::make(), // Added this line
             Actions\Action::make('simulation') // Changed 'simulate' to 'simulation'
                 ->label('Run Simulation')
                 ->icon('heroicon-o-play')
-                ->url(fn (GameScenario $record): string => GameScenarioResource::getUrl('simulation', ['record' => $record])) // Modified closure
+                ->url(fn(GameScenario $record): string => GameScenarioResource::getUrl('simulation', ['record' => $record])) // Modified closure
                 ->openUrlInNewTab(),
             Actions\DeleteAction::make(),
         ];

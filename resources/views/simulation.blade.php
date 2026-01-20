@@ -723,6 +723,12 @@
             </div>
         </div>
 
+        <!-- Comments Section -->
+        <div
+            class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Comments') }}</h2>
+            @livewire('comments', ['record' => $gameScenario])
+        </div>
 
     </div>
 </x-layouts.app>
