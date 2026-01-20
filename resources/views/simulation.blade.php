@@ -565,7 +565,12 @@
                 class="absolute inset-0 z-20 bg-white dark:bg-gray-800 p-6 overflow-y-auto"
                 style="display: none;">
                 
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Dominant Strategies') }}</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ __('Dominant Strategies') }}</h2>
+                    <button @click="showDominant = false" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold">
+                        {{ __('Back to Payoff Matrix ->') }}
+                    </button>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Player A Dominant Strategy -->
@@ -607,9 +612,14 @@
                 class="absolute inset-0 z-20 bg-white dark:bg-gray-800 p-6 overflow-y-auto"
                 style="display: none;">
                 
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                    {{ __('Probability Calculation (Mixed Strategies)') }}
-                </h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        {{ __('Probability Calculation (Mixed Strategies)') }}
+                    </h2>
+                    <button @click="showMixed = false" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold">
+                        {{ __('Back to Payoff Matrix ->') }}
+                    </button>
+                </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- Theory & Origin -->

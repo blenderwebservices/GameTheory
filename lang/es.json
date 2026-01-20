@@ -83,5 +83,14 @@
     "Save Changes": "Guardar Cambios",
     "Reset Default": "Restablecer",
     "Switch Strategies Order": "Cambiar Orden de Estrategias",
-    "Switch Players": "Cambiar Jugadores"
+    "Switch Players": "Cambiar Jugadores",
+    "Back to Payoff Matrix ->": "Regresar a la matriz de pagos ->",
+    "Simulations - Game Theory": "Simulaciones - Teoría de Juegos",
+    "Available Simulations": "Simulaciones Disponibles",
+    "Simulations": "Simulaciones",
+    "Admin Panel": "Panel de Administración",
+    "Log Out": "Cerrar Sesión",
+    "Register": "Registrarse",
+    "Built by": "Desarrollado por",
+    "Game Theory": "Teoría de Juegos"
 }
