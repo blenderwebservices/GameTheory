@@ -289,6 +289,38 @@
         },
         isNash(key) {
             return this.nashEquilibria.includes(key);
+        },
+        formatNumber(value) {
+            if (value === '' || value === null || isNaN(value)) return '';
+            return new Intl.NumberFormat('en-US').format(value);
+        },
+        updatePayoff(rowKey, index, value) {
+            // Remove commas and non-numeric chars (allow minus at start)
+            let clean = value.replace(/[^0-9-]/g, '');
+            // Prevent multiple minuses
+            if ((clean.match(/-/g) || []).length > 1) {
+                 clean = clean.replace(/-/g, '');
+                 // Simple fallback: if user typed double minus, just reset or assume positive. 
+                 // Better: keep first minus.
+                 if (value.startsWith('-')) clean = '-' + clean; 
+            }
+            
+            let num = parseInt(clean);
+            
+            // Handle empty or invalid input
+            if (isNaN(num)) {
+                // If it's just a minus sign, don't update matrix yet, letting user type
+                if (clean === '-') return; 
+                num = 0; 
+            }
+
+            // Clamping
+            const min = -10000000;
+            const max = 10000000;
+            if (num < min) num = min;
+            if (num > max) num = max;
+
+            this.matrix[rowKey][index] = num;
         }
     }">
         <div class="mb-8">
@@ -378,14 +410,18 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('AA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" x-model.number="matrix['AA'][0]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['AA'][0])"
+                                                @input="updatePayoff('AA', 0, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['AA'][0])"
+                                                class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('AA') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" x-model.number="matrix['AA'][1]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['AA'][1])"
+                                                @input="updatePayoff('AA', 1, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['AA'][1])"
+                                                class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesB.includes('AA') }">
                                         </div>
                                         <div x-show="isNash('AA')"
@@ -397,14 +433,18 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('AB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" x-model.number="matrix['AB'][0]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['AB'][0])"
+                                                @input="updatePayoff('AB', 0, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['AB'][0])"
+                                                class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('AB') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" x-model.number="matrix['AB'][1]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['AB'][1])"
+                                                @input="updatePayoff('AB', 1, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['AB'][1])"
+                                                class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesB.includes('AB') }">
                                         </div>
                                         <div x-show="isNash('AB')"
@@ -423,14 +463,18 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('BA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" x-model.number="matrix['BA'][0]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['BA'][0])"
+                                                @input="updatePayoff('BA', 0, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['BA'][0])"
+                                                class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('BA') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" x-model.number="matrix['BA'][1]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['BA'][1])"
+                                                @input="updatePayoff('BA', 1, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['BA'][1])"
+                                                class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesB.includes('BA') }">
                                         </div>
                                         <div x-show="isNash('BA')"
@@ -442,14 +486,18 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('BB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" x-model.number="matrix['BB'][0]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['BB'][0])"
+                                                @input="updatePayoff('BB', 0, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['BB'][0])"
+                                                class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('BB') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" x-model.number="matrix['BB'][1]" min="-10" max="10"
-                                                step="1"
-                                                class="w-16 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
+                                            <input type="text" inputmode="text" 
+                                                :value="formatNumber(matrix['BB'][1])"
+                                                @input="updatePayoff('BB', 1, $event.target.value)"
+                                                @blur="$el.value = formatNumber(matrix['BB'][1])"
+                                                class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesB.includes('BB') }">
                                         </div>
                                         <div x-show="isNash('BB')"
@@ -603,7 +651,7 @@
                             <div class="flex flex-col gap-6">
                                 <!-- Player A Indifference (finding y/q) -->
                                 <div>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">To find B's strategy (y, 1-y):</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">{{ __('To find B\'s strategy (y, 1-y):') }}</p>
                                     <div class="flex items-center gap-2 font-mono text-sm">
                                         <!-- Matrix A -->
                                         <div class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
@@ -631,7 +679,7 @@
 
                                 <!-- Player B Indifference (finding x/p) -->
                                 <div>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">To find A's strategy (x, 1-x):</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">{{ __('To find A\'s strategy (x, 1-x):') }}</p>
                                     <div class="flex items-center gap-2 font-mono text-sm">
                                         <!-- Matrix B (Transposed for mult) -->
                                         <div class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
@@ -765,9 +813,9 @@
                         </p>
                         <ul class="list-disc ml-5 space-y-1">
                             <li>
-                                <span
-                                    class="font-semibold text-gray-800 dark:text-gray-200">{{ __('Range -10 to 10:') }}</span>
-                                {{ __('Allows modeling a full spectrum of results, from catastrophic situations (-10) to ideal outcomes (10).') }}
+                                    <span
+                                    class="font-semibold text-gray-800 dark:text-gray-200">{{ __('Range -10,000,000 to 10,000,000:') }}</span>
+                                {{ __('Allows modeling a full spectrum of results, from large losses to large gains.') }}
                             </li>
                             <li>
                                 <span
