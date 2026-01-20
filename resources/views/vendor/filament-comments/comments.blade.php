@@ -3,12 +3,13 @@
         <div class="space-y-4">
             {{ $this->form }}
             
-            <x-filament::button
+            <button
+                type="button"
                 wire:click="create"
-                color="primary"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition-colors font-semibold dark:bg-blue-500 dark:hover:bg-blue-600"
             >
                 {{ __('filament-comments::filament-comments.comments.add') }}
-            </x-filament::button>
+            </button>
         </div>
     @endif
 
