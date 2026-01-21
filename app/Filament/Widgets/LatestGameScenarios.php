@@ -31,6 +31,11 @@ class LatestGameScenarios extends BaseWidget
                     ->searchable()
                     ->sortable()
                     ->label('Scenario Name'),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Creator')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('created_at')
                     ->date()
                     ->sortable()
@@ -38,6 +43,12 @@ class LatestGameScenarios extends BaseWidget
                 Tables\Columns\TextColumn::make('filament_comments_count')
                     ->badge()
                     ->label('Comments'),
-            ]);
+            ])
+            ->groups([
+                'user.name',
+            ])
+            ->defaultGroup(
+                auth()->user()->role === 'admin' ? 'user.name' : null
+            );
     }
 }
