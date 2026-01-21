@@ -1,5 +1,6 @@
 <x-layouts.app>
     <x-slot name="title">{{ __('View Simulation') }} - {{ $gameScenario->name }}</x-slot>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <div x-data="{
         matrix: {{ json_encode($gameScenario->payoff_matrix) }},
@@ -17,6 +18,7 @@
         dominantInfo: { A: null, B: null },
         showMixed: false,
         showDominant: false,
+        debugPoints: { A: [], B: [], Nash: [], Ref: [] },
         init() {
             this.calculateNash();
             this.calculateMixed();
@@ -25,7 +27,193 @@
                 this.calculateNash();
                 this.calculateMixed();
                 this.calculateDominant();
+                if (this.showMixed) this.updateGraph();
             }, { deep: true });
+            
+            this.$watch('showMixed', (val) => {
+                if (val) {
+                    this.$nextTick(() => {
+                        this.initGraph();
+                        this.updateGraph();
+                    });
+                }
+            });
+        },
+        initGraph() {
+            const ctx = document.getElementById('bestResponseChart');
+            if (!ctx) return;
+            
+            const existingChart = Chart.getChart('bestResponseChart');
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Player A Best Response (p)',
+                            borderColor: 'rgb(37, 99, 235)',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 3,
+                            data: [],
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            fill: false,
+                            tension: 0
+                        },
+                        {
+                            label: 'Player B Best Response (q)',
+                            borderColor: 'rgb(220, 38, 38)',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            borderWidth: 3,
+                            data: [],
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            fill: false,
+                            tension: 0
+                        },
+                        {
+                            label: 'Equilibrios de Nash',
+                            type: 'scatter',
+                            borderColor: 'rgb(22, 163, 74)',
+                            backgroundColor: 'rgb(22, 163, 74)',
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            data: [],
+                            showLine: false
+                        },
+                        {
+                            label: 'Líneas de Referencia',
+                            type: 'line',
+                            borderColor: 'rgba(156, 163, 175, 0.6)',
+                            borderDash: [5, 5],
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            data: [],
+                            showLine: true,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            min: 0,
+                            max: 1,
+                            title: { display: true, text: 'Probabilidad q (Jugador B)' }
+                        },
+                        y: {
+                            type: 'linear',
+                            min: 0,
+                            max: 1,
+                            title: { display: true, text: 'Probabilidad p (Jugador A)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const p = context.raw;
+                                    if (context.datasetIndex === 2) {
+                                        return [
+                                            p.label,
+                                            `q: ${p.x.toFixed(2)}, 1-q: ${(1-p.x).toFixed(2)}`,
+                                            `p: ${p.y.toFixed(2)}, 1-p: ${(1-p.y).toFixed(2)}`
+                                        ];
+                                    }
+                                    return `${context.dataset.label}: (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        },
+        updateGraph() {
+            const chart = Chart.getChart('bestResponseChart');
+            if (!chart) return;
+
+            let dataA = [];
+            let q_star = this.q;
+            let A11 = Number(this.matrix['AA'][0]);
+            let A12 = Number(this.matrix['AB'][0]);
+            let A21 = Number(this.matrix['BA'][0]);
+            let A22 = Number(this.matrix['BB'][0]);
+            
+            let prefer_top_at_q0 = (A12 > A22); 
+            let prefer_top_at_q1 = (A11 > A21); 
+            
+            let p_start = prefer_top_at_q0 ? 1 : 0;
+            let p_end = prefer_top_at_q1 ? 1 : 0;
+
+            if (q_star >= 0 && q_star <= 1) {
+                dataA.push({x: 0, y: p_start});
+                dataA.push({x: q_star, y: p_start});
+                dataA.push({x: q_star, y: p_end}); 
+                dataA.push({x: 1, y: p_end});
+            } else {
+                 dataA.push({x: 0, y: p_start});
+                 dataA.push({x: 1, y: p_start});
+            }
+
+            let dataB = [];
+            let p_star = this.p;
+            let B11 = Number(this.matrix['AA'][1]);
+            let B12 = Number(this.matrix['AB'][1]);
+            let B21 = Number(this.matrix['BA'][1]);
+            let B22 = Number(this.matrix['BB'][1]);
+            
+            let prefer_left_at_p0 = (B21 > B22);
+            let prefer_left_at_p1 = (B11 > B12);
+            
+            let q_start = prefer_left_at_p0 ? 1 : 0;
+            let q_end = prefer_left_at_p1 ? 1 : 0;
+            
+             if (p_star >= 0 && p_star <= 1) {
+                dataB.push({x: q_start, y: 0});
+                dataB.push({x: q_start, y: p_star});
+                dataB.push({x: q_end, y: p_star});
+                dataB.push({x: q_end, y: 1});
+            } else {
+                 dataB.push({x: q_start, y: 0});
+                 dataB.push({x: q_start, y: 1});
+            }
+            
+            // Nash Equilibria
+            let dataNash = [];
+            if (this.isNash('AA')) dataNash.push({x: 1, y: 1, label: 'Nash (AA)'});
+            if (this.isNash('AB')) dataNash.push({x: 0, y: 1, label: 'Nash (AB)'});
+            if (this.isNash('BA')) dataNash.push({x: 1, y: 0, label: 'Nash (BA)'});
+            if (this.isNash('BB')) dataNash.push({x: 0, y: 0, label: 'Nash (BB)'});
+            if (q_star > 0 && q_star < 1 && p_star > 0 && p_star < 1) {
+                dataNash.push({x: q_star, y: p_star, label: 'Nash (Mixto)'});
+            }
+
+            // Reference Lines
+            let dataRefLines = [];
+            if (q_star > 0 && q_star < 1 && p_star > 0 && p_star < 1) {
+                dataRefLines.push({x: q_star, y: 0});
+                dataRefLines.push({x: q_star, y: p_star});
+                dataRefLines.push({x: 0, y: p_star});
+            }
+            
+            chart.data.datasets[0].data = dataA;
+            chart.data.datasets[1].data = dataB;
+            chart.data.datasets[2].data = dataNash;
+            chart.data.datasets[3].data = dataRefLines;
+            
+            // Debug Points update
+            this.debugPoints.A = [...dataA];
+            this.debugPoints.B = [...dataB];
+            this.debugPoints.Nash = [...dataNash];
+            this.debugPoints.Ref = [...dataRefLines];
+
+            chart.update();
         },
         swapStrategies() {
             // Swap text for A
@@ -347,14 +535,14 @@
                             {{ __('Payoff Matrix') }}: <span x-text="playerA"></span> vs <span x-text="playerB"></span>
                         </h2>
                         <div class="flex gap-2">
-                             <!-- Mixed Strategies Button -->
+                            <!-- Mixed Strategies Button -->
                             <button @click.stop="showMixed = !showMixed; showDominant = false"
                                 :disabled="nashEquilibria.length === 1"
                                 :class="nashEquilibria.length === 1 ? 'opacity-50 cursor-not-allowed grayscale' : 'hover:bg-yellow-600'"
                                 class="px-3 py-1 bg-yellow-500 text-white text-sm font-semibold rounded shadow transition-all duration-300">
                                 {{ __('Mixed Strategies') }}
                             </button>
-                            
+
                             <!-- Dominant Strategies Button -->
                             <button @click.stop="showDominant = !showDominant; showMixed = false"
                                 :disabled="!dominantInfo.A && !dominantInfo.B"
@@ -410,15 +598,13 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('AA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['AA'][0])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['AA'][0])"
                                                 @input="updatePayoff('AA', 0, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['AA'][0])"
                                                 class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('AA') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['AA'][1])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['AA'][1])"
                                                 @input="updatePayoff('AA', 1, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['AA'][1])"
                                                 class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
@@ -433,15 +619,13 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('AB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['AB'][0])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['AB'][0])"
                                                 @input="updatePayoff('AB', 0, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['AB'][0])"
                                                 class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('AB') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['AB'][1])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['AB'][1])"
                                                 @input="updatePayoff('AB', 1, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['AB'][1])"
                                                 class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
@@ -463,15 +647,13 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('BA') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['BA'][0])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['BA'][0])"
                                                 @input="updatePayoff('BA', 0, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['BA'][0])"
                                                 class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('BA') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['BA'][1])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['BA'][1])"
                                                 @input="updatePayoff('BA', 1, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['BA'][1])"
                                                 class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
@@ -486,15 +668,13 @@
                                     <td class="p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300"
                                         :class="isNash('BB') ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-inset ring-green-500' : 'hover:bg-gray-100 dark:hover:bg-gray-800'">
                                         <div class="flex justify-center items-center gap-2 text-lg">
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['BB'][0])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['BB'][0])"
                                                 @input="updatePayoff('BB', 0, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['BB'][0])"
                                                 class="w-24 text-center font-bold text-blue-600 dark:text-blue-400 bg-transparent border-b border-blue-200 focus:border-blue-500 focus:outline-none"
                                                 :class="{ 'underline': bestResponsesA.includes('BB') }">
                                             <span class="text-gray-400">,</span>
-                                            <input type="text" inputmode="text" 
-                                                :value="formatNumber(matrix['BB'][1])"
+                                            <input type="text" inputmode="text" :value="formatNumber(matrix['BB'][1])"
                                                 @input="updatePayoff('BB', 1, $event.target.value)"
                                                 @blur="$el.value = formatNumber(matrix['BB'][1])"
                                                 class="w-24 text-center font-bold text-red-600 dark:text-red-400 bg-transparent border-b border-red-200 focus:border-red-500 focus:outline-none"
@@ -553,21 +733,18 @@
             </div>
 
             <!-- Overlays -->
-            
+
             <!-- Dominant Strategies Overlay -->
-            <div x-show="showDominant"
-                x-transition:enter="transform transition ease-out duration-300"
-                x-transition:enter-start="translate-x-full"
-                x-transition:enter-end="translate-x-0"
-                x-transition:leave="transform transition ease-in duration-300"
-                x-transition:leave-start="translate-x-0"
+            <div x-show="showDominant" x-transition:enter="transform transition ease-out duration-300"
+                x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+                x-transition:leave="transform transition ease-in duration-300" x-transition:leave-start="translate-x-0"
                 x-transition:leave-end="translate-x-full"
-                class="absolute inset-0 z-20 bg-white dark:bg-gray-800 p-6 overflow-y-auto"
-                style="display: none;">
-                
+                class="absolute inset-0 z-20 bg-white dark:bg-gray-800 p-6 overflow-y-auto" style="display: none;">
+
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ __('Dominant Strategies') }}</h2>
-                    <button @click="showDominant = false" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold">
+                    <button @click="showDominant = false"
+                        class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold">
                         {{ __('Back to Payoff Matrix ->') }}
                     </button>
                 </div>
@@ -590,33 +767,31 @@
                         <h3 class="font-semibold text-red-800 dark:text-red-300 mb-2 flex items-center">
                             <span class="mr-2">{{ __('Player B') }} (<span x-text="playerB"></span>):</span>
                         </h3>
-                        <p class="text-lg font-bold text-red-600 dark:text-red-400 mb-2" x-text="dominantInfo.B?.strategy">
+                        <p class="text-lg font-bold text-red-600 dark:text-red-400 mb-2"
+                            x-text="dominantInfo.B?.strategy">
                         </p>
                         <p class="text-sm text-gray-700 dark:text-gray-300" x-text="dominantInfo.B?.reason"></p>
                     </div>
                 </div>
-                
+
                 <div x-show="!dominantInfo.A && !dominantInfo.B" class="text-center text-gray-500 mt-10">
                     {{ __('No dominant strategies found.') }}
                 </div>
             </div>
 
             <!-- Probability Calculation Overlay -->
-            <div x-show="showMixed"
-                x-transition:enter="transform transition ease-out duration-300"
-                x-transition:enter-start="translate-x-full"
-                x-transition:enter-end="translate-x-0"
-                x-transition:leave="transform transition ease-in duration-300"
-                x-transition:leave-start="translate-x-0"
+            <div x-show="showMixed" x-transition:enter="transform transition ease-out duration-300"
+                x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+                x-transition:leave="transform transition ease-in duration-300" x-transition:leave-start="translate-x-0"
                 x-transition:leave-end="translate-x-full"
-                class="absolute inset-0 z-20 bg-white dark:bg-gray-800 p-6 overflow-y-auto"
-                style="display: none;">
-                
+                class="absolute inset-0 z-20 bg-white dark:bg-gray-800 p-6 overflow-y-auto" style="display: none;">
+
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
                         {{ __('Probability Calculation (Mixed Strategies)') }}
                     </h2>
-                    <button @click="showMixed = false" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold">
+                    <button @click="showMixed = false"
+                        class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold">
                         {{ __('Back to Payoff Matrix ->') }}
                     </button>
                 </div>
@@ -653,18 +828,22 @@
                         </div>
 
                         <!-- Matrix Multiplication Visualization -->
-                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 overflow-x-auto">
+                        <div
+                            class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 overflow-x-auto">
                             <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-4 text-sm">
                                 {{ __('Matrix Verification') }}
                             </h3>
-                            
+
                             <div class="flex flex-col gap-6">
                                 <!-- Player A Indifference (finding y/q) -->
                                 <div>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">{{ __('To find B\'s strategy (y, 1-y):') }}</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">
+                                        {{ __('To find B\'s strategy (y, 1-y):') }}
+                                    </p>
                                     <div class="flex items-center gap-2 font-mono text-sm">
                                         <!-- Matrix A -->
-                                        <div class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
+                                        <div
+                                            class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
                                             <div class="flex gap-4 justify-between">
                                                 <span x-text="matrix['AA'][0]" class="w-6 text-right"></span>
                                                 <span x-text="matrix['AB'][0]" class="w-6 text-right"></span>
@@ -677,7 +856,8 @@
                                         <!-- Times -->
                                         <span class="text-gray-500">×</span>
                                         <!-- Vector y -->
-                                        <div class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
+                                        <div
+                                            class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
                                             <div class="text-center">y</div>
                                             <div class="text-gray-500 border-t border-gray-400 my-0.5"></div>
                                             <div class="text-center">1-y</div>
@@ -689,10 +869,13 @@
 
                                 <!-- Player B Indifference (finding x/p) -->
                                 <div>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">{{ __('To find A\'s strategy (x, 1-x):') }}</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">
+                                        {{ __('To find A\'s strategy (x, 1-x):') }}
+                                    </p>
                                     <div class="flex items-center gap-2 font-mono text-sm">
                                         <!-- Matrix B (Transposed for mult) -->
-                                        <div class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
+                                        <div
+                                            class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
                                             <div class="flex gap-4 justify-between">
                                                 <span x-text="matrix['AA'][1]" class="w-6 text-right"></span>
                                                 <span x-text="matrix['BA'][1]" class="w-6 text-right"></span>
@@ -705,7 +888,8 @@
                                         <!-- Times -->
                                         <span class="text-gray-500">×</span>
                                         <!-- Vector x -->
-                                        <div class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
+                                        <div
+                                            class="flex flex-col justify-center border-l-2 border-r-2 border-gray-800 dark:border-gray-300 px-2 py-1">
                                             <div class="text-center">x</div>
                                             <div class="text-gray-500 border-t border-gray-400 my-0.5"></div>
                                             <div class="text-center">1-x</div>
@@ -726,29 +910,34 @@
                             <!-- Formula q -->
                             <div class="mb-4">
                                 <p class="text-blue-600 dark:text-blue-400 font-bold mb-1">
-                                    {{ __('q (Probability B Left):') }} <span class="text-xs font-normal text-gray-500">(y)</span>
+                                    {{ __('q (Probability B Left):') }} <span
+                                        class="text-xs font-normal text-gray-500">(y)</span>
                                 </p>
                                 <p class="mb-1 text-gray-500">
                                     q = (A22 - A12) / (A11 - A12 - A21 + A22)
                                 </p>
                                 <p class="text-gray-700 dark:text-gray-300">
-                                    q = (<span x-text="matrix['BB'][0]"></span> - <span x-text="matrix['AB'][0]"></span>) /
-                                    (<span x-text="matrix['AA'][0]"></span> - <span x-text="matrix['AB'][0]"></span> - <span
-                                        x-text="matrix['BA'][0]"></span> + <span x-text="matrix['BB'][0]"></span>)
+                                    q = (<span x-text="matrix['BB'][0]"></span> - <span
+                                        x-text="matrix['AB'][0]"></span>) /
+                                    (<span x-text="matrix['AA'][0]"></span> - <span x-text="matrix['AB'][0]"></span> -
+                                    <span x-text="matrix['BA'][0]"></span> + <span x-text="matrix['BB'][0]"></span>)
                                 </p>
                             </div>
 
                             <!-- Formula p -->
                             <div>
-                                <p class="text-red-600 dark:text-red-400 font-bold mb-1">{{ __('p (Probability A Top):') }} <span class="text-xs font-normal text-gray-500">(x)</span>
+                                <p class="text-red-600 dark:text-red-400 font-bold mb-1">
+                                    {{ __('p (Probability A Top):') }} <span
+                                        class="text-xs font-normal text-gray-500">(x)</span>
                                 </p>
                                 <p class="mb-1 text-gray-500">
                                     p = (B22 - B21) / (B11 - B21 - B12 + B22)
                                 </p>
                                 <p class="text-gray-700 dark:text-gray-300">
-                                    p = (<span x-text="matrix['BB'][1]"></span> - <span x-text="matrix['BA'][1]"></span>) /
-                                    (<span x-text="matrix['AA'][1]"></span> - <span x-text="matrix['BA'][1]"></span> - <span
-                                        x-text="matrix['AB'][1]"></span> + <span x-text="matrix['BB'][1]"></span>)
+                                    p = (<span x-text="matrix['BB'][1]"></span> - <span
+                                        x-text="matrix['BA'][1]"></span>) /
+                                    (<span x-text="matrix['AA'][1]"></span> - <span x-text="matrix['BA'][1]"></span> -
+                                    <span x-text="matrix['AB'][1]"></span> + <span x-text="matrix['BB'][1]"></span>)
                                 </p>
                             </div>
                         </div>
@@ -764,12 +953,14 @@
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div class="bg-white dark:bg-gray-800 p-3 rounded shadow-sm text-center">
-                                    <span class="block text-xs text-gray-500 uppercase">{{ __('Probability p (A)') }}</span>
+                                    <span
+                                        class="block text-xs text-gray-500 uppercase">{{ __('Probability p (A)') }}</span>
                                     <span class="text-xl font-bold text-blue-600 dark:text-blue-400"
                                         x-text="formatProb(p)"></span>
                                 </div>
                                 <div class="bg-white dark:bg-gray-800 p-3 rounded shadow-sm text-center">
-                                    <span class="block text-xs text-gray-500 uppercase">{{ __('Probability q (B)') }}</span>
+                                    <span
+                                        class="block text-xs text-gray-500 uppercase">{{ __('Probability q (B)') }}</span>
                                     <span class="text-xl font-bold text-red-600 dark:text-red-400"
                                         x-text="formatProb(q)"></span>
                                 </div>
@@ -800,102 +991,144 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Interpretation Card -->
-        <div
-            class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Payoff Matrix Interpretation') }}
-            </h2>
-
-            <div class="space-y-6 text-gray-700 dark:text-gray-300">
-                <!-- Point 1 -->
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
-                    <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center">
-                        <span
-                            class="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">1</span>
-                        {{ __('Positive and Negative Values Selection') }}
-                    </h3>
-                    <div class="ml-8 text-sm leading-relaxed space-y-2">
-                        <p>{{ __('Values in the matrix represent the utility or benefit each player receives. A scale of -10 to 10 has been selected to represent preference intensity:') }}
+                    <!-- Graph Section -->
+                    <div
+                        class="mt-8 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4 text-lg">
+                            {{ __('Best Response Functions') }}
+                        </h3>
+                        <div class="relative h-96 w-full">
+                            <canvas id="bestResponseChart"></canvas>
+                        </div>
+                        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                            <span class="inline-block w-3 h-3 bg-blue-500 rounded-full mr-1"></span>
+                            <span class="font-bold text-blue-600 dark:text-blue-400">{{ __('Blue Line') }}</span>:
+                            {{ __('Player A Best Response') }} (p) {{ __('given') }} q.
+                            <br>
+                            <span class="inline-block w-3 h-3 bg-red-500 rounded-full mr-1"></span>
+                            <span class="font-bold text-red-600 dark:text-red-400">{{ __('Red Line') }}</span>:
+                            {{ __('Player B Best Response') }} (q) {{ __('given') }} p.
                         </p>
-                        <ul class="list-disc ml-5 space-y-1">
-                            <li>
-                                    <span
-                                    class="font-semibold text-gray-800 dark:text-gray-200">{{ __('Range -10,000,000 to 10,000,000:') }}</span>
-                                {{ __('Allows modeling a full spectrum of results, from large losses to large gains.') }}
-                            </li>
-                            <li>
-                                <span
-                                    class="font-semibold text-green-600 dark:text-green-400">{{ __('Values 1 to 10 (Positive):') }}</span>
-                                {{ __('Represent gains, benefits, or satisfaction. The higher the number, the greater the reward.') }}
-                            </li>
-                            <li>
-                                <span class="font-semibold text-gray-600 dark:text-gray-400">{{ __('Value 0:') }}</span>
-                                {{ __('Represents a neutral outcome, where there is neither significant gain nor loss (indifference point).') }}
-                            </li>
-                            <li>
-                                <span
-                                    class="font-semibold text-red-600 dark:text-red-400">{{ __('Values -10 to -1 (Negative):') }}</span>
-                                {{ __('Represent costs, losses, punishments, or undesirable consequences. The lower the number (more negative), the worse the outcome.') }}
-                            </li>
-                        </ul>
-                    </div>
-                </div>
 
-                <!-- Point 2 -->
-                <div
-                    class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
-                    <h3 class="font-semibold text-green-800 dark:text-green-300 mb-2 flex items-center">
-                        <span
-                            class="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">2</span>
-                        {{ __('Nash Equilibrium (Green Cells)') }}
-                    </h3>
-                    <p class="ml-8 text-sm leading-relaxed">
-                        {{ __('Cells highlighted in green indicate a Nash Equilibrium. This means that, at that point, neither player has incentives to unilaterally change their strategy. If a player changes their decision while the other maintains theirs, their payoff would decrease or not improve. It is the "stable" state of the game where both strategies coincide optimally.') }}
-                    </p>
-                </div>
-
-                <!-- Point 3 -->
-                <div
-                    class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
-                    <h3 class="font-semibold text-purple-800 dark:text-purple-300 mb-2 flex items-center">
-                        <span
-                            class="bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">3</span>
-                        {{ __('Maximization, Optimization, and Rationality') }}
-                    </h3>
-                    <div class="ml-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div
-                            class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
-                            <strong
-                                class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Rationality') }}</strong>
-                            {{ __('It is assumed that players are rational: they think logically, understand the rules, and always act to satisfy their own interests.') }}
-                        </div>
-                        <div
-                            class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
-                            <strong
-                                class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Maximization') }}</strong>
-                            {{ __('The fundamental goal is to maximize their own utility. Each player seeks to obtain the highest possible value in the matrix for themselves.') }}
-                        </div>
-                        <div
-                            class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
-                            <strong
-                                class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Optimization') }}</strong>
-                            {{ __('It is the process of choosing the "best response" to the opponent\'s actions. It is not just seeking the highest number, but the best possible result given the circumstances.') }}
+                        <!-- Debug Table -->
+                        <div class="mt-8 border-t border-gray-100 dark:border-gray-700 pt-6">
+                            <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                                {{ __('Tabla de Puntos Graficados') }}
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-[10px] font-mono">
+                                    <div class="font-bold text-blue-600 mb-1">A (p dado q):</div>
+                                    <template x-for="p in debugPoints.A">
+                                        <div x-text="`(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`"></div>
+                                    </template>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-[10px] font-mono">
+                                    <div class="font-bold text-red-600 mb-1">B (q dado p):</div>
+                                    <template x-for="p in debugPoints.B">
+                                        <div x-text="`(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`"></div>
+                                    </template>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-[10px] font-mono">
+                                    <div class="font-bold text-green-600 mb-1">Nash:</div>
+                                    <template x-for="p in debugPoints.Nash">
+                                        <div x-text="`${p.label}: (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`"></div>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+    </div>
 
-        <!-- Comments Section -->
-        <div
-            class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Comments') }}</h2>
-            @livewire('comments', ['record' => $gameScenario])
+    <!-- Interpretation Card -->
+    <div class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Payoff Matrix Interpretation') }}
+        </h2>
+
+        <div class="space-y-6 text-gray-700 dark:text-gray-300">
+            <!-- Point 1 -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center">
+                    <span
+                        class="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">1</span>
+                    {{ __('Positive and Negative Values Selection') }}
+                </h3>
+                <div class="ml-8 text-sm leading-relaxed space-y-2">
+                    <p>{{ __('Values in the matrix represent the utility or benefit each player receives. A scale of -10 to 10 has been selected to represent preference intensity:') }}
+                    </p>
+                    <ul class="list-disc ml-5 space-y-1">
+                        <li>
+                            <span
+                                class="font-semibold text-gray-800 dark:text-gray-200">{{ __('Range -10,000,000 to 10,000,000:') }}</span>
+                            {{ __('Allows modeling a full spectrum of results, from large losses to large gains.') }}
+                        </li>
+                        <li>
+                            <span
+                                class="font-semibold text-green-600 dark:text-green-400">{{ __('Values 1 to 10 (Positive):') }}</span>
+                            {{ __('Represent gains, benefits, or satisfaction. The higher the number, the greater the reward.') }}
+                        </li>
+                        <li>
+                            <span class="font-semibold text-gray-600 dark:text-gray-400">{{ __('Value 0:') }}</span>
+                            {{ __('Represents a neutral outcome, where there is neither significant gain nor loss (indifference point).') }}
+                        </li>
+                        <li>
+                            <span
+                                class="font-semibold text-red-600 dark:text-red-400">{{ __('Values -10 to -1 (Negative):') }}</span>
+                            {{ __('Represent costs, losses, punishments, or undesirable consequences. The lower the number (more negative), the worse the outcome.') }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Point 2 -->
+            <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
+                <h3 class="font-semibold text-green-800 dark:text-green-300 mb-2 flex items-center">
+                    <span
+                        class="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                    {{ __('Nash Equilibrium (Green Cells)') }}
+                </h3>
+                <p class="ml-8 text-sm leading-relaxed">
+                    {{ __('Cells highlighted in green indicate a Nash Equilibrium. This means that, at that point, neither player has incentives to unilaterally change their strategy. If a player changes their decision while the other maintains theirs, their payoff would decrease or not improve. It is the "stable" state of the game where both strategies coincide optimally.') }}
+                </p>
+            </div>
+
+            <!-- Point 3 -->
+            <div
+                class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                <h3 class="font-semibold text-purple-800 dark:text-purple-300 mb-2 flex items-center">
+                    <span
+                        class="bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">3</span>
+                    {{ __('Maximization, Optimization, and Rationality') }}
+                </h3>
+                <div class="ml-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
+                        <strong class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Rationality') }}</strong>
+                        {{ __('It is assumed that players are rational: they think logically, understand the rules, and always act to satisfy their own interests.') }}
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
+                        <strong
+                            class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Maximization') }}</strong>
+                        {{ __('The fundamental goal is to maximize their own utility. Each player seeks to obtain the highest possible value in the matrix for themselves.') }}
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-3 rounded border border-purple-100 dark:border-purple-700">
+                        <strong
+                            class="block text-purple-700 dark:text-purple-400 mb-1">{{ __('Optimization') }}</strong>
+                        {{ __('It is the process of choosing the "best response" to the opponent\'s actions. It is not just seeking the highest number, but the best possible result given the circumstances.') }}
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">{{ __('Comments') }}</h2>
+        @livewire('comments', ['record' => $gameScenario])
+    </div>
 
     </div>
 </x-layouts.app>
