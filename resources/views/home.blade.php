@@ -12,13 +12,13 @@
         <div class="w-full md:w-1/2 prose dark:prose-invert">
             <h2
                 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500 mb-6">
-                {{ __('¿Qué hace esta aplicación?') }}
+                {{ __('What does this application do?') }}
             </h2>
             <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                {{ __('Basada en el concepto matemático desarrollado por John Nash, esta app permite a los usuarios estudiar situaciones estratégicas donde hay dos o más jugadores actuando de forma independiente.') }}
+                {{ __('Based on the mathematical concept developed by John Nash, this app allows users to study strategic situations where two or more players act independently.') }}
             </p>
             <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-                {{ __('El objetivo es demostrar cómo se alcanzan estados estables (equilibrios) donde ningún jugador tiene incentivos para cambiar unilateralmente, ilustrando fenómenos como el dilema del prisionero.') }}
+                {{ __('The goal is to demonstrate how stable states (equilibria) are reached where no player has incentives to unilaterally change, illustrating phenomena such as the prisoner\'s dilemma.') }}
             </p>
         </div>
         <div class="w-full md:w-1/2 flex justify-center">
@@ -38,26 +38,26 @@
         <div class="w-full md:w-1/2 prose dark:prose-invert">
             <h2
                 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500 mb-6">
-                {{ __('Funcionalidades y Uso') }}
+                {{ __('Features and Usage') }}
             </h2>
             <ul class="space-y-4">
                 <li class="flex items-start">
                     <span
                         class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold mr-3 mt-1">1</span>
                     <span
-                        class="text-gray-700 dark:text-gray-300">{{ __('Simular Modelos: Interactúa con matrices de pagos y experimenta en tiempo real.') }}</span>
+                        class="text-gray-700 dark:text-gray-300">{{ __('Simulate Models: Interact with payoff matrices and experiment in real time.') }}</span>
                 </li>
                 <li class="flex items-start">
                     <span
                         class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 font-bold mr-3 mt-1">2</span>
                     <span
-                        class="text-gray-700 dark:text-gray-300">{{ __('Calcular Equilibrios: Identifica automáticamente las mejores respuestas y equilibrios de Nash.') }}</span>
+                        class="text-gray-700 dark:text-gray-300">{{ __('Calculate Equilibria: Automatically identify best responses and Nash equilibria.') }}</span>
                 </li>
                 <li class="flex items-start">
                     <span
                         class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-pink-100 text-pink-600 font-bold mr-3 mt-1">3</span>
                     <span
-                        class="text-gray-700 dark:text-gray-300">{{ __('Registro y Login: Crea tu cuenta para guardar tus simulaciones y escenarios personalizados.') }}</span>
+                        class="text-gray-700 dark:text-gray-300">{{ __('Registration and Login: Create your account to save your custom simulations and scenarios.') }}</span>
                 </li>
             </ul>
         </div>

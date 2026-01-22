@@ -971,20 +971,36 @@
                                     {{ __('Probability of each Cell') }}
                                 </h4>
                                 <div class="grid grid-cols-2 gap-2 text-xs">
-                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
-                                        <span>Top-Left (p*q):</span>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
+                                        <span>
+                                            <span x-text="playerAStrategy1" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
+                                            <span x-text="playerBStrategy1" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span class="text-gray-500">(p*q):</span>
+                                        </span>
                                         <span class="font-bold" x-text="formatProb(p * q)"></span>
                                     </div>
-                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
-                                        <span>Top-Right (p*(1-q)):</span>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
+                                        <span>
+                                            <span x-text="playerAStrategy1" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
+                                            <span x-text="playerBStrategy2" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span class="text-gray-500">(p*(1-q)):</span>
+                                        </span>
                                         <span class="font-bold" x-text="formatProb(p * (1-q))"></span>
                                     </div>
-                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
-                                        <span>Bottom-Left ((1-p)*q):</span>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
+                                        <span>
+                                            <span x-text="playerAStrategy2" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
+                                            <span x-text="playerBStrategy1" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span class="text-gray-500">((1-p)*q):</span>
+                                        </span>
                                         <span class="font-bold" x-text="formatProb((1-p) * q)"></span>
                                     </div>
-                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between">
-                                        <span>Bottom-Right ((1-p)*(1-q)):</span>
+                                    <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
+                                        <span>
+                                            <span x-text="playerAStrategy2" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
+                                            <span x-text="playerBStrategy2" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span class="text-gray-500">((1-p)*(1-q)):</span>
+                                        </span>
                                         <span class="font-bold" x-text="formatProb((1-p) * (1-q))"></span>
                                     </div>
                                 </div>
@@ -1014,23 +1030,23 @@
                         <!-- Debug Table -->
                         <div class="mt-8 border-t border-gray-100 dark:border-gray-700 pt-6">
                             <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
-                                {{ __('Tabla de Puntos Graficados') }}
+                                {{ __('Charted Points Table') }}
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-[10px] font-mono">
-                                    <div class="font-bold text-blue-600 mb-1">A (p dado q):</div>
+                                    <div class="font-bold text-blue-600 mb-1">{{ __('A (p given q):') }}</div>
                                     <template x-for="p in debugPoints.A">
                                         <div x-text="`(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`"></div>
                                     </template>
                                 </div>
                                 <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-[10px] font-mono">
-                                    <div class="font-bold text-red-600 mb-1">B (q dado p):</div>
+                                    <div class="font-bold text-red-600 mb-1">{{ __('B (q given p):') }}</div>
                                     <template x-for="p in debugPoints.B">
                                         <div x-text="`(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`"></div>
                                     </template>
                                 </div>
                                 <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded text-[10px] font-mono">
-                                    <div class="font-bold text-green-600 mb-1">Nash:</div>
+                                    <div class="font-bold text-green-600 mb-1">{{ __('Nash:') }}</div>
                                     <template x-for="p in debugPoints.Nash">
                                         <div x-text="`${p.label}: (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`"></div>
                                     </template>
