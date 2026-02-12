@@ -24,6 +24,7 @@ class GameScenario extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'description',
         'user_id',
         'player_a_name',
@@ -42,6 +43,46 @@ class GameScenario extends Model
         'default_payoff_matrix' => 'array',
         'default_configuration' => 'array',
     ];
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($scenario) {
+            if (empty($scenario->slug)) {
+                $slug = \Illuminate\Support\Str::slug($scenario->getTranslation('name', 'en'));
+                $scenario->slug = static::makeUniqueSlug($slug);
+            }
+        });
+
+        static::updating(function ($scenario) {
+            if (($scenario->isDirty('name') || empty($scenario->slug)) && !$scenario->isDirty('slug')) {
+                $slug = \Illuminate\Support\Str::slug($scenario->getTranslation('name', 'en'));
+                $scenario->slug = static::makeUniqueSlug($slug, $scenario->id);
+            }
+        });
+    }
+
+    protected static function makeUniqueSlug($slug, $ignoreId = null)
+    {
+        $originalSlug = $slug;
+        $count = 1;
+
+        while (
+            static::where('slug', $slug)->when($ignoreId, function ($query) use ($ignoreId) {
+                return $query->where('id', '!=', $ignoreId);
+            })->exists()
+        ) {
+            $slug = $originalSlug . '-' . $count++;
+        }
+
+        return $slug;
+    }
 
     public function user()
     {
