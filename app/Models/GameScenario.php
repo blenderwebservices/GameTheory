@@ -49,6 +49,18 @@ class GameScenario extends Model
         return 'slug';
     }
 
+    public function getRouteKey()
+    {
+        return $this->slug ?: $this->id;
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)
+            ->orWhere('id', $value)
+            ->firstOrFail();
+    }
+
     protected static function boot()
     {
         parent::boot();
