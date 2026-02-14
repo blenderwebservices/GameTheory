@@ -48,14 +48,11 @@ class AuthController extends Controller
             $scenariosToCopy = GameScenario::whereIn('id', $request->scenarios)->get();
             
             foreach ($scenariosToCopy as $scenario) {
-                // Replicate logic
-                $newScenario = $scenario->replicate();
+                $newScenario = $scenario->replicate(['slug']);
                 $newScenario->user_id = $user->id;
-                $newScenario->name = $scenario->name . ' (Copy)'; // Optional: Append copy? User request didn't specify, but safer to differentiate or keep same name.
-                // Keeping same name is cleaner for "default scenarios" feel.
-                $newScenario->name = $scenario->name; 
                 $newScenario->save();
             }
+
         }
 
         Auth::login($user);
