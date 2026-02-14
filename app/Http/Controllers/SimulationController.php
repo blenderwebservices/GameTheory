@@ -22,13 +22,13 @@ class SimulationController extends Controller
 
     public function show(\App\Models\GameScenario $gameScenario)
     {
-        abort_unless(auth()->id() === $gameScenario->user_id, 404);
+        abort_unless(auth()->id() === $gameScenario->user_id || auth()->user()->role === 'admin', 403);
         return view('simulation', compact('gameScenario'));
     }
 
     public function update(Request $request, \App\Models\GameScenario $gameScenario)
     {
-        abort_unless(auth()->id() === $gameScenario->user_id, 404);
+        abort_unless(auth()->id() === $gameScenario->user_id || auth()->user()->role === 'admin', 403);
 
         $validated = $request->validate([
             'payoff_matrix' => 'required|array',
@@ -52,7 +52,7 @@ class SimulationController extends Controller
 
     public function reset(\App\Models\GameScenario $gameScenario)
     {
-        abort_unless(auth()->id() === $gameScenario->user_id, 404);
+        abort_unless(auth()->id() === $gameScenario->user_id || auth()->user()->role === 'admin', 403);
 
         $updates = [];
         // ... (rest of the logic)
