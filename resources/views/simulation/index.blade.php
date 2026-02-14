@@ -49,6 +49,27 @@
                             </div>
                         </div>
                     </div>
+
+                    @if(auth()->user()->role === 'admin')
+                        <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">{{ $scenario->user->name ?? 'N/A' }}</span>
+                                <span class="mx-2">&bull;</span>
+                                <span>{{ $scenario->user->email ?? 'N/A' }}</span>
+                            </div>
+                            <div class="flex flex-col gap-1 text-[10px] text-gray-400 uppercase tracking-wider">
+                                <div class="flex justify-between">
+                                    <span>{{ __('Created') }}:</span>
+                                    <span>{{ $scenario->created_at->format('Y-m-d H:i') }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>{{ __('Modified') }}:</span>
+                                    <span>{{ $scenario->updated_at->format('Y-m-d H:i') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
                 
                 <div class="bg-gray-50 dark:bg-gray-700/50 p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">

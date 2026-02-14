@@ -37,6 +37,7 @@ class GameScenarioTest extends TestCase
 
     public function test_user_can_update_simulation_payoffs(): void
     {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         $user = User::factory()->create();
         $scenario = GameScenario::factory()->create(['user_id' => $user->id]);
 
@@ -65,6 +66,7 @@ class GameScenarioTest extends TestCase
 
     public function test_user_can_reset_simulation(): void
     {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         $user = User::factory()->create();
         $defaultMatrix = ['AA' => [1, 1], 'AB' => [0, 0], 'BA' => [0, 0], 'BB' => [1, 1]];
         

@@ -19,6 +19,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Livewire\Livewire::component('app.filament.resources.user-resource.relation-managers.game-scenarios-relation-manager', \App\Filament\Resources\UserResource\RelationManagers\GameScenariosRelationManager::class);
     }
 }

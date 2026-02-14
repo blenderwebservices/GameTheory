@@ -13,7 +13,7 @@ class SimulationController extends Controller
         // Current requirement: "show the front only to authenticated users"
         
         if (auth()->user()->role === 'admin') {
-            $scenarios = \App\Models\GameScenario::all();
+            $scenarios = \App\Models\GameScenario::with('user')->get();
         } else {
             $scenarios = auth()->user()->gameScenarios; 
         }

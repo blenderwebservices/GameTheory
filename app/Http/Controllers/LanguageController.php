@@ -10,6 +10,10 @@ class LanguageController extends Controller
     {
         if (in_array($locale, ['en', 'es'])) {
             session(['locale' => $locale]);
+            
+            if (auth()->check()) {
+                auth()->user()->update(['locale' => $locale]);
+            }
         }
         return redirect()->back();
     }

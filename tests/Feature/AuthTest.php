@@ -20,6 +20,7 @@ class AuthTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -33,6 +34,7 @@ class AuthTest extends TestCase
 
     public function test_registration_replicates_scenarios_and_generates_unique_slugs(): void
     {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         // 1. Create an admin and a template scenario
         $admin = User::factory()->create(['role' => 'admin']);
         $template = GameScenario::factory()->create([
@@ -85,6 +87,7 @@ class AuthTest extends TestCase
 
     public function test_users_can_logout(): void
     {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->post('/logout');
