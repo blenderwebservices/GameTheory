@@ -86,12 +86,23 @@ class GameScenarioTest extends TestCase
 
     public function test_users_cannot_access_others_simulations(): void
     {
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
+        $user1 = User::factory()->create(['role' => 'user']);
+        $user2 = User::factory()->create(['role' => 'user']);
         $scenario1 = GameScenario::factory()->create(['user_id' => $user1->id]);
 
         $response = $this->actingAs($user2)->get("/simulation/{$scenario1->slug}");
 
-        $response->assertStatus(404); // Or 403 depending on implementation, but resolveRouteBinding usually 404s if scoped
+        $response->assertStatus(403);
+    }
+
+    public function test_admins_can_access_others_simulations(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create(['role' => 'user']);
+        $scenario = GameScenario::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($admin)->get("/simulation/{$scenario->slug}");
+
+        $response->assertStatus(200);
     }
 }
