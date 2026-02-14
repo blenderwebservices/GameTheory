@@ -67,7 +67,8 @@ class GameScenario extends Model
 
         static::creating(function ($scenario) {
             if (empty($scenario->slug)) {
-                $slug = \Illuminate\Support\Str::slug($scenario->getTranslation('name', 'en'));
+                $name = $scenario->getTranslation('name', 'en') ?: $scenario->name;
+                $slug = \Illuminate\Support\Str::slug($name);
                 $scenario->slug = static::makeUniqueSlug($slug);
             }
         });

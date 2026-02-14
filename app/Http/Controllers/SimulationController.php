@@ -22,11 +22,14 @@ class SimulationController extends Controller
 
     public function show(\App\Models\GameScenario $gameScenario)
     {
+        abort_unless(auth()->id() === $gameScenario->user_id, 404);
         return view('simulation', compact('gameScenario'));
     }
 
     public function update(Request $request, \App\Models\GameScenario $gameScenario)
     {
+        abort_unless(auth()->id() === $gameScenario->user_id, 404);
+
         $validated = $request->validate([
             'payoff_matrix' => 'required|array',
             'player_a_name' => 'nullable|string',
@@ -41,11 +44,18 @@ class SimulationController extends Controller
             return !is_null($value);
         }));
 
-        return response()->json(['message' => 'Scenario updated successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Scenario updated successfully'
+        ]);
     }
 
     public function reset(\App\Models\GameScenario $gameScenario)
     {
+        abort_unless(auth()->id() === $gameScenario->user_id, 404);
+
+        $updates = [];
+        // ... (rest of the logic)
         $updates = [];
         
         if ($gameScenario->default_payoff_matrix) {
@@ -67,6 +77,7 @@ class SimulationController extends Controller
         }
 
         return response()->json([
+            'success' => true,
             'message' => 'Scenario reset to defaults',
             'payoff_matrix' => $gameScenario->fresh()->payoff_matrix,
             'player_a_name' => $gameScenario->player_a_name,
