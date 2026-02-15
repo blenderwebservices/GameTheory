@@ -15,10 +15,10 @@ class AuthController extends Controller
         // Fetch default scenarios (for now, assuming scenarios created by admin/user_id 1 are defaults)
         // Or simply fetching all existing scenarios to offer as template
         // Better: Fetch scenarios owned by an admin. For seeding, assume user 1 is admin.
-        $defaultScenarios = GameScenario::whereHas('user', function($query) {
+        $defaultScenarios = GameScenario::whereHas('user', function ($query) {
             $query->where('role', 'admin');
         })->get();
-        
+
         // If no admin user scenarios found (e.g. first run), fallback to all
         if ($defaultScenarios->isEmpty()) {
             $defaultScenarios = GameScenario::all();
@@ -47,7 +47,7 @@ class AuthController extends Controller
 
         if ($request->has('scenarios')) {
             $scenariosToCopy = GameScenario::whereIn('id', $request->scenarios)->get();
-            
+
             foreach ($scenariosToCopy as $scenario) {
                 $newScenario = $scenario->replicate(['slug']);
                 $newScenario->user_id = $user->id;
