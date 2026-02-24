@@ -973,32 +973,40 @@
                                 <div class="grid grid-cols-2 gap-2 text-xs">
                                     <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
                                         <span>
-                                            <span x-text="playerAStrategy1" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
-                                            <span x-text="playerBStrategy1" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span x-text="playerAStrategy1"
+                                                class="font-semibold text-blue-600 dark:text-blue-400"></span> -
+                                            <span x-text="playerBStrategy1"
+                                                class="font-semibold text-red-600 dark:text-red-400"></span>
                                             <span class="text-gray-500">(p*q):</span>
                                         </span>
                                         <span class="font-bold" x-text="formatProb(p * q)"></span>
                                     </div>
                                     <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
                                         <span>
-                                            <span x-text="playerAStrategy1" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
-                                            <span x-text="playerBStrategy2" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span x-text="playerAStrategy1"
+                                                class="font-semibold text-blue-600 dark:text-blue-400"></span> -
+                                            <span x-text="playerBStrategy2"
+                                                class="font-semibold text-red-600 dark:text-red-400"></span>
                                             <span class="text-gray-500">(p*(1-q)):</span>
                                         </span>
                                         <span class="font-bold" x-text="formatProb(p * (1-q))"></span>
                                     </div>
                                     <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
                                         <span>
-                                            <span x-text="playerAStrategy2" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
-                                            <span x-text="playerBStrategy1" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span x-text="playerAStrategy2"
+                                                class="font-semibold text-blue-600 dark:text-blue-400"></span> -
+                                            <span x-text="playerBStrategy1"
+                                                class="font-semibold text-red-600 dark:text-red-400"></span>
                                             <span class="text-gray-500">((1-p)*q):</span>
                                         </span>
                                         <span class="font-bold" x-text="formatProb((1-p) * q)"></span>
                                     </div>
                                     <div class="p-2 bg-white dark:bg-gray-800 rounded flex justify-between flex-wrap">
                                         <span>
-                                            <span x-text="playerAStrategy2" class="font-semibold text-blue-600 dark:text-blue-400"></span> - 
-                                            <span x-text="playerBStrategy2" class="font-semibold text-red-600 dark:text-red-400"></span>
+                                            <span x-text="playerAStrategy2"
+                                                class="font-semibold text-blue-600 dark:text-blue-400"></span> -
+                                            <span x-text="playerBStrategy2"
+                                                class="font-semibold text-red-600 dark:text-red-400"></span>
                                             <span class="text-gray-500">((1-p)*(1-q)):</span>
                                         </span>
                                         <span class="font-bold" x-text="formatProb((1-p) * (1-q))"></span>
@@ -1055,9 +1063,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
-    </div>
     </div>
 
     <!-- Interpretation Card -->
