@@ -105,4 +105,22 @@ class GameScenarioTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_simulation_index_shows_comment_count(): void
+    {
+        $user = User::factory()->create();
+        $scenario = GameScenario::factory()->create(['user_id' => $user->id]);
+        
+        // Add a comment
+        $scenario->filamentComments()->create([
+            'user_id' => $user->id,
+            'comment' => 'Test comment',
+            'subject_type' => $scenario->getMorphClass(),
+        ]);
+
+        $response = $this->actingAs($user)->get('/simulations');
+
+        $response->assertStatus(200);
+        $response->assertSee('1 comment');
+    }
 }
