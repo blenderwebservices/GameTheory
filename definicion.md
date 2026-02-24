@@ -11,7 +11,8 @@ Hoy, la plataforma permite:
 - **Cálculo de Equilibrios de Nash**: Identificación automática de equilibrios puros y mixtos.
 - **Análisis de Estrategias Dominantes**: Explicación lógica de por qué una decisión prevalece sobre otra.
 - **Interacción Social Básica**: Sistema de comentarios por escenario para debate técnico.
-- **Gestión de Plantillas**: Acceso rápido a juegos clásicos como el Dilema del Prisionero o la Batalla de los Sexos.
+- **Portabilidad de Datos (Fase Inicial)**: Exportación de simulaciones para respaldo.
+- **Gestión de Plantillas**: Acceso rápido a juegos clásicos.
 
 ## 3. Plataforma Tecnológica
 
@@ -29,7 +30,7 @@ Para escalar a una audiencia global, la evolución natural hacia una plataforma 
 
 ## 4. Desarrollo Mobile y Ubicuidad
 El salto a **App Mobile** es fundamental para la fidelización.
-- **Ventajas**: Notificaciones push para desafíos, portabilidad para uso en aulas, y aprovechamiento de gestos táctiles para manipular matrices y gráficos.
+- **Ventajas**: Notificaciones push para desafíos, alertas de nuevos seguidores, likes y portabilidad para uso en aulas.
 - **Stack Recomendado**: Flutter o React Native para mantener una base de código única con rendimiento nativo.
 
 ## 5. Modelos de Monetización
@@ -38,7 +39,10 @@ Para garantizar la sostenibilidad, se proponen modelos de bajo impacto para el u
 - **Suscripciones Premium**:
     - **Mensual/Anual**: Acceso a simulaciones ilimitadas, exportación de reportes PDF y análisis avanzado de N-jugadores.
     - **Lifetime (De por vida)**: Un solo pago para usuarios recurrentes que desean todas las funciones presentes y futuras.
-- **Características Premium**: Temas visuales exclusivos, almacenamiento en la nube ilimitado y acceso a desafíos comunitarios especiales.
+- **Características Premium**: 
+    - **Reportes Profesionales (PDF)**: Generación de informes estéticos con branding personalizado, ideal para presentaciones académicas o profesionales.
+    - **Análisis N-Jugadores**: Motores avanzados para juegos más complejos.
+    - **Personalización Visual**: Temas exclusivos y almacenamiento ilimitado.
 
 ---
 
@@ -61,6 +65,7 @@ El salto definitivo para la plataforma es la integración de Inteligencia Artifi
 
 ### Implementación Técnica de I.A.
 - **Motor**: Integración vía API con modelos como Gemini 1.5 Pro o GPT-4.
+- **Personalización (BYOK)**: Opción para que el usuario integre su propia API Key de LLM, permitiendo un uso personalizado y control de costos/privacidad.
 - **Prompt Engineering**: Sistema de "System Instructions" diseñado para forzar respuestas en formatos JSON estructurados.
 - **Interfaz**: Chat interactivo lateral en la vista de simulación que manipula la matriz en tiempo real.
 
@@ -69,17 +74,33 @@ El salto definitivo para la plataforma es la integración de Inteligencia Artifi
 ## 7. Propuesta a Corto Plazo: El Muro de Simulaciones (Estrategia de Fidelización)
 Como paso inmediato para transformar la herramienta en una **comunidad colaborativa**, se propone la implementación de un "Muro de Simulaciones":
 
-### El Valor del Contexto
-Permitir que cada simulación incluya un bloque de descripción donde el autor explique su hipótesis (ej. "¿Qué pasa si el Jugador A es irracional?") y sus hallazgos.
+### Dinámica Temporal y UX (Muro Vivo)
+- **Orden Cronológico Inverso**: Las simulaciones más recientes aparecen siempre en la parte superior, garantizando frescura visual constante.
+- **Límite de Exposición (Feed Curado)**: El muro principal muestra un número limitado de modelos (ej. los últimos 50-100) para mantener un rendimiento óptimo y una experiencia de usuario (UX) ligera y agradable.
+- **Histórico Completo**: Los modelos que "desaparecen" del feed principal por antigüedad siguen siendo parte de la base de conocimientos y son accesibles mediante la búsqueda.
+
+### Descubrimiento y Búsqueda Avanzada
+Un cuadro de búsqueda inteligente permitirá ubicar cualquier experimento, incluso aquellos fuera del feed principal, filtrando por:
+- **Autor**: Búsqueda por ID de usuario o nombre.
+- **Título**: Localización por palabras clave en el nombre del modelo.
+- **Etiquetas (Tags)**: Filtrado por categorías técnicas (#EquilibrioNash, #SumaCero).
+- **Temporalidad**: Búsqueda por rangos de fecha de creación o publicación.
 
 ### Estructura de la "Tarjeta de Simulación"
+- **Identificador Visual (Iconografía)**: Posibilidad de asignar un icono personalizado a color desde una biblioteca integrada (ej. Heroicons, FontAwesome) para identificar rápidamente el tipo de problema o industria del modelo.
 - **Miniatura dinámica**: Gráfico o matriz generada automáticamente.
-- **Etiquetas (Tags)**: #DilemaDelPrisionero, #SumaCero, #EstrategiasEvolutivas.
 - **Botón de "Remix"**: Permitir que otros carguen esa configuración exacta en su editor para modificarla.
 
 ### Gamificación y Feedback
-- **Votaciones/Likes**: Para destacar el contenido más educativo.
+- **Votaciones/Likes**: Para destacar el contenido más educativo y validar el ingenio de los creadores.
+- **Sistema de Seguimiento**: Capacidad de seguir a autores específicos del muro para recibir notificaciones de sus nuevas publicaciones.
+- **Portabilidad y Colaboración Técnica**:
+    - **Exportación/Importación JSON**: Capacidad de descargar la estructura de un juego en formato JSON para compartirlo fuera de la plataforma o realizar respaldos manuales. Permite la "inyección" de escenarios complejos creados por terceros.
+    - **Remix desde Archivo**: Opción de cargar un archivo JSON directamente al editor para iniciar una simulación instantánea.
 - **Comentarios anidados**: Debate técnico profundo sobre la lógica de cada juego.
+- **Notificaciones Inteligentes**:
+    - **Desde Administración**: Comunicados globales, nuevos desafíos o actualizaciones críticas.
+    - **Interacción Social**: Alertas por nuevos seguidores, likes recibidos o comentarios en simulaciones propias.
 - **Desafíos**: Retos propuestos por la administración para incentivar la participación activa.
 
 ---
