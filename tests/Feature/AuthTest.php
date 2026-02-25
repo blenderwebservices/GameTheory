@@ -18,6 +18,20 @@ class AuthTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_registration_screen_shows_exactly_four_scenarios(): void
+    {
+        // Run the seeder to populate the 4 default scenarios
+        $this->seed(\Database\Seeders\GameScenarioSeeder::class);
+
+        $response = $this->get('/register');
+
+        $response->assertStatus(200);
+        
+        $response->assertViewHas('defaultScenarios', function ($scenarios) {
+            return $scenarios->count() === 4;
+        });
+    }
+
     public function test_new_users_can_register(): void
     {
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class);
