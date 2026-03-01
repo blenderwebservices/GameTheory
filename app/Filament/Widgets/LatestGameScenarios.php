@@ -30,19 +30,26 @@ class LatestGameScenarios extends BaseWidget
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->label('Scenario Name'),
+                    ->label('Nombre del Escenario'),
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Creator')
+                    ->label('Creador')
                     ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->date()
+                    ->dateTime()
                     ->sortable()
-                    ->label('Created Date'),
+                    ->label('Fecha de Integración'),
                 Tables\Columns\TextColumn::make('filament_comments_count')
                     ->badge()
-                    ->label('Comments'),
+                    ->label('Comentarios'),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('view_simulation')
+                    ->label('Simular')
+                    ->icon('heroicon-o-play')
+                    ->url(fn(GameScenario $record): string => route('simulation.show', $record))
+                    ->openUrlInNewTab(),
             ])
             ->groups([
                 'user.name',
